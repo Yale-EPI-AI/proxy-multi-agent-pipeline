@@ -20,6 +20,7 @@ import gradio as gr  # noqa: E402
 from src.config import OUTPUTS_DIR, MASTER_VARIABLE_LIST  # noqa: E402
 from src.domain_knowledge import DOMAIN_KNOWLEDGE  # noqa: E402
 
+import re as _re  # noqa: E402
 import pandas as _pd  # noqa: E402
 
 # ── Build dropdown choices ──────────────────────────────────────────────────
@@ -156,6 +157,358 @@ def _load_presentation2() -> str:
             )
         return _wrap_in_iframe(content)
     return "<p>presentation2.html not found in project root.</p>"
+
+
+# ── Domain Knowledge table ────────────────────────────────────────────────
+
+# Category groupings derived from the section comments in domain_knowledge.py
+_INDICATOR_CATEGORIES: list[tuple[str, str, list[str]]] = [
+    ("HLT", "Air Quality", ["HPE", "HFD", "OZD", "NOD", "SOE", "COE", "VOE"]),
+    ("HLT", "Sanitation & Drinking Water", ["UWD", "USD"]),
+    ("HLT", "Heavy Metals", ["LED"]),
+    ("HLT", "Waste Management", ["WRR", "SMW", "WPC"]),
+    ("ECO", "Biodiversity & Habitat", [
+        "MKP", "MHP", "MPE", "PAR", "SPI", "TBN", "TKP", "PAE", "PHL", "RLI", "SHI", "BER",
+    ]),
+    ("ECO", "Forests", ["PFL", "IFL", "FCL", "TCG", "FLI"]),
+    ("ECO", "Fisheries", ["FSS", "FCD", "BTZ", "BTO", "RMS"]),
+    ("ECO", "Air Pollution", ["OEB", "OEC", "NXA", "SDA"]),
+    ("ECO", "Agriculture", ["SNM", "PSU", "PRS", "RCY"]),
+    ("ECO", "Water Resources", ["WWG", "WWC", "WWT", "WWR"]),
+    ("PCC", "Climate Change Mitigation", [
+        "CDA", "CDF", "CHA", "FGA", "NDA", "BCA", "LUF", "GTI", "GTP", "GHN", "CBP",
+    ]),
+]
+
+
+def _build_domain_knowledge_html() -> str:
+    """Build a standalone HTML page showing full raw domain knowledge for review."""
+    import html as html_mod
+
+    cards_html = ""
+    for obj_code, category, tlas in _INDICATOR_CATEGORIES:
+        # Category header
+        cards_html += (
+            f'<div class="cat-header">'
+            f'<span class="obj-badge obj-{obj_code.lower()}">{obj_code}</span> '
+            f'{html_mod.escape(category)}'
+            f'</div>\n'
+        )
+        for tla in tlas:
+            text = DOMAIN_KNOWLEDGE.get(tla, "")
+            if not text:
+                continue
+
+            # Extract indicator name for the header
+            name_match = _re.match(r"^[A-Z]{2,3} \(([^)]+)\)", text)
+            name = html_mod.escape(name_match.group(1)) if name_match else tla
+
+            # Split into paragraphs and render the full text
+            paragraphs = [p.strip() for p in text.strip().split("\n\n") if p.strip()]
+            body_html = ""
+            for p in paragraphs:
+                escaped = html_mod.escape(p)
+                # Bold key labels inline
+                for label in ["Units:", "Data from", "Transformation:", "Polarity:",
+                              "Targets:", "Target:", "Weight:", "Sibling indicators:",
+                              "Key issue:", "Key data quality issue:", "Key quality issue:",
+                              "Calculation:", "Formula:", "Note:", "IMPUTATION MODEL:",
+                              "Reference:", "Budget allocation"]:
+                    escaped = escaped.replace(label, f"<strong>{label}</strong>")
+                body_html += f"<p>{escaped}</p>\n"
+
+            cards_html += (
+                f'<div class="card" data-tla="{tla}">'
+                f'<div class="card-header" onclick="this.parentElement.classList.toggle(\'open\')">'
+                f'<span class="tla">{tla}</span>'
+                f'<span class="card-name">{name}</span>'
+                f'<span class="toggle-icon">&#x25BC;</span>'
+                f'</div>'
+                f'<div class="card-body">{body_html}</div>'
+                f'</div>\n'
+            )
+
+    total = len(DOMAIN_KNOWLEDGE)
+    return f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {{
+    --yale-blue: #00356B;
+    --yale-blue-light: #2b5f9e;
+    --yale-blue-faint: rgba(0, 53, 107, 0.06);
+    --green: #2e7d32;
+    --green-light: #e8f5e9;
+    --amber: #bf6900;
+    --amber-light: #fff8e1;
+    --red: #c62828;
+    --red-light: #ffebee;
+    --purple: #6a1b9a;
+    --purple-light: #f3e5f5;
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --border: #d4d2cb;
+    --text: #2c2c2c;
+    --text-secondary: #5a5a5a;
+    --text-muted: #8a8a8a;
+  }}
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  body {{
+    font-family: 'Source Sans 3', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    padding: 2rem 1.5rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }}
+  .page-header {{
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }}
+  .page-header h1 {{
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--yale-blue);
+    margin-bottom: 0.25rem;
+  }}
+  .page-header .subtitle {{
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }}
+  .page-header .note {{
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }}
+
+  /* Search */
+  .search-box {{
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 0.75rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    background: var(--bg-secondary);
+    outline: none;
+    transition: border-color 0.2s;
+  }}
+  .search-box:focus {{
+    border-color: var(--yale-blue);
+    box-shadow: 0 0 0 2px rgba(0, 53, 107, 0.12);
+  }}
+  .toolbar {{
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }}
+  .toolbar button {{
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }}
+  .toolbar button:hover {{
+    border-color: var(--yale-blue);
+    color: var(--yale-blue);
+  }}
+  .count-bar {{
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }}
+
+  /* Category headers */
+  .cat-header {{
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 1.5rem 0 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }}
+  .cat-header:first-child {{ margin-top: 0; }}
+  .obj-badge {{
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+  }}
+  .obj-hlt {{ background: #e3f2fd; color: #1565c0; }}
+  .obj-eco {{ background: var(--green-light); color: var(--green); }}
+  .obj-pcc {{ background: var(--amber-light); color: var(--amber); }}
+
+  /* Cards */
+  .card {{
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.4rem;
+    background: var(--bg);
+    transition: box-shadow 0.15s;
+  }}
+  .card:hover {{
+    box-shadow: 0 1px 6px rgba(0, 53, 107, 0.08);
+  }}
+  .card-header {{
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    cursor: pointer;
+    user-select: none;
+  }}
+  .card-header:hover {{
+    background: var(--yale-blue-faint);
+  }}
+  .tla {{
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--yale-blue);
+    background: var(--yale-blue-faint);
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }}
+  .card-name {{
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text);
+    flex: 1;
+  }}
+  .toggle-icon {{
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }}
+  .card.open .toggle-icon {{
+    transform: rotate(180deg);
+  }}
+
+  /* Card body — hidden by default */
+  .card-body {{
+    display: none;
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid #eeede9;
+    background: var(--bg-secondary);
+    font-size: 0.84rem;
+    line-height: 1.65;
+  }}
+  .card.open .card-body {{
+    display: block;
+  }}
+  .card-body p {{
+    margin-bottom: 0.6rem;
+  }}
+  .card-body p:last-child {{
+    margin-bottom: 0;
+  }}
+  .card-body strong {{
+    color: var(--yale-blue);
+  }}
+
+  /* Hidden by search */
+  .card.hidden, .cat-header.hidden {{
+    display: none;
+  }}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>EPI Indicator Domain Knowledge</h1>
+  <p class="subtitle">{total} indicators across {len(_INDICATOR_CATEGORIES)} issue categories</p>
+  <p class="note">This is the exact context injected into the Stage 1 research agent for each indicator. Please review for accuracy.</p>
+</div>
+
+<input type="text" class="search-box" placeholder="Search indicators (e.g. wastewater, PM2.5, IHME, imputation...)" id="searchInput">
+<div class="toolbar">
+  <button onclick="toggleAll(true)">Expand All</button>
+  <button onclick="toggleAll(false)">Collapse All</button>
+</div>
+<div class="count-bar" id="countBar">Showing all {total} indicators</div>
+
+{cards_html}
+
+<script>
+function toggleAll(open) {{
+  document.querySelectorAll('.card').forEach(c => {{
+    if (open) c.classList.add('open');
+    else c.classList.remove('open');
+  }});
+}}
+
+const input = document.getElementById('searchInput');
+const countBar = document.getElementById('countBar');
+const cards = Array.from(document.querySelectorAll('.card'));
+const catHeaders = Array.from(document.querySelectorAll('.cat-header'));
+const total = {total};
+
+input.addEventListener('input', function() {{
+  const q = this.value.toLowerCase().trim();
+  let visible = 0;
+
+  cards.forEach(card => {{
+    const text = card.textContent.toLowerCase();
+    const show = !q || text.includes(q);
+    card.classList.toggle('hidden', !show);
+    if (show) {{
+      visible++;
+      if (q) card.classList.add('open');
+    }}
+  }});
+
+  // Hide category headers with no visible cards
+  catHeaders.forEach(header => {{
+    let next = header.nextElementSibling;
+    let hasVisible = false;
+    while (next && !next.classList.contains('cat-header')) {{
+      if (next.classList.contains('card') && !next.classList.contains('hidden')) {{
+        hasVisible = true;
+        break;
+      }}
+      next = next.nextElementSibling;
+    }}
+    header.classList.toggle('hidden', !hasVisible);
+  }});
+
+  countBar.textContent = q
+    ? 'Showing ' + visible + ' of ' + total + ' indicators'
+    : 'Showing all ' + total + ' indicators';
+  if (!q) cards.forEach(c => c.classList.remove('open'));
+}});
+</script>
+
+</body>
+</html>"""
 
 
 # ── Gradio app ──────────────────────────────────────────────────────────────
@@ -378,6 +731,10 @@ def build_app() -> gr.Blocks:
 
         with gr.Tab("Presentation [EPI]"):
             gr.HTML(_load_presentation2())
+
+        # ── Tab 5: Domain Knowledge ───────────────────────────────────
+        with gr.Tab("Indicator Reference"):
+            gr.HTML(_wrap_in_iframe(_build_domain_knowledge_html()))
 
     return app
 
