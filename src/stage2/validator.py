@@ -7,8 +7,15 @@ from typing import Optional
 
 import anthropic
 
-from src.config import ANTHROPIC_API_KEY, CLAUDE_VALIDATION_MODEL, VALIDATION_MAX_TOKENS
-from src.schemas import ProxyHypothesis, ValidationAnnotation, VerificationResult
+from src.config import (
+    ANTHROPIC_API_KEY,
+    CLAUDE_VALIDATION_MODEL,
+    INCLUSION_BINDING_MODE,
+    INCLUSION_CRITICAL_CRITERIA,
+    INCLUSION_SOFT_GATE_MIN_SCORE,
+    VALIDATION_MAX_TOKENS,
+)
+from src.schemas import InclusionCriteriaScore, ProxyHypothesis, ValidationAnnotation, Verdict, VerificationResult
 from src.stage2.prompts import VALIDATOR_SYSTEM_PROMPT, build_validation_prompt
 
 logger = logging.getLogger(__name__)
@@ -35,20 +42,71 @@ def _strip_markdown_fences(text: str) -> str:
     return text
 
 
+def apply_inclusion_gate(
+    annotation: ValidationAnnotation,
+    current_verdict: Verdict,
+    binding_mode: str | None = None,
+) -> tuple[Verdict, list[str]]:
+    """Apply inclusion criteria gating to adjust the verdict.
+
+    Args:
+        annotation: The validation annotation (must have inclusion_score).
+        current_verdict: The verdict from statistical verification.
+        binding_mode: Override for INCLUSION_BINDING_MODE.
+
+    Returns:
+        (adjusted_verdict, gate_notes) — verdict may be unchanged.
+    """
+    mode = binding_mode or INCLUSION_BINDING_MODE
+    gate_notes: list[str] = []
+
+    if mode == "advisory" or annotation.inclusion_score is None:
+        return current_verdict, gate_notes
+
+    score = annotation.inclusion_score
+
+    # Hard gate: reject if any critical criterion is explicitly False
+    if mode == "hard_gate":
+        for criterion in INCLUSION_CRITICAL_CRITERIA:
+            value = getattr(score, criterion, None)
+            if value is False:
+                gate_notes.append(
+                    f"Inclusion hard gate: '{criterion}' is False → rejected"
+                )
+                return Verdict.rejected, gate_notes
+
+    # Soft gate (and hard gate fallthrough): downgrade confirmed → partially_confirmed
+    if mode in ("soft_gate", "hard_gate"):
+        if (
+            score.criteria_met is not None
+            and score.criteria_met < INCLUSION_SOFT_GATE_MIN_SCORE
+            and current_verdict == Verdict.confirmed
+        ):
+            gate_notes.append(
+                f"Inclusion soft gate: criteria_met={score.criteria_met} < "
+                f"{INCLUSION_SOFT_GATE_MIN_SCORE} → downgraded to partially_confirmed"
+            )
+            return Verdict.partially_confirmed, gate_notes
+
+    return current_verdict, gate_notes
+
+
 async def validate_result(
     hypothesis: ProxyHypothesis,
     verification_result: VerificationResult,
     output_dir: Path,
-) -> Optional[ValidationAnnotation]:
+    inclusion_binding_mode: str | None = None,
+) -> Optional[tuple[ValidationAnnotation, Verdict]]:
     """Validate a verification result by reviewing the agent's outputs.
 
     Args:
         hypothesis: The proxy hypothesis that was verified.
         verification_result: The structured result from verification.
         output_dir: Directory containing verify.py, result.json, agent_output.txt.
+        inclusion_binding_mode: Override for inclusion criteria binding mode.
 
     Returns:
-        ValidationAnnotation if successful, None on failure.
+        (ValidationAnnotation, adjusted_verdict) if successful, None on failure.
     """
     # Read verification artifacts
     verify_py = _read_file_safe(output_dir / "verify.py")
@@ -98,4 +156,11 @@ async def validate_result(
     )
     logger.info("Saved validation to %s", validation_path)
 
-    return annotation
+    # Apply inclusion criteria gating
+    adjusted_verdict, gate_notes = apply_inclusion_gate(
+        annotation, verification_result.verdict, inclusion_binding_mode
+    )
+    if gate_notes:
+        annotation.issues.extend(gate_notes)
+
+    return annotation, adjusted_verdict

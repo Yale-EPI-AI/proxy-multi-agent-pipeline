@@ -8,6 +8,7 @@ from typing import Optional
 
 from src.config import OUTPUTS_DIR
 from src.schemas import (
+    InclusionCriteriaScore,
     PipelineResult,
     ProxyHypothesis,
     ValidationAnnotation,
@@ -75,6 +76,7 @@ def generate_dashboard(
   <th>p</th>
   <th>n</th>
   <th>Validation</th>
+  <th>Inclusion</th>
 </tr>
 <tr>
   <th class="col-source">{_source_tag('s1')}</th>
@@ -83,6 +85,7 @@ def generate_dashboard(
   <th class="col-source">{_source_tag('s2v')}</th>
   <th class="col-source">{_source_tag('s2v')}</th>
   <th class="col-source">{_source_tag('s2v')}</th>
+  <th class="col-source">{_source_tag('s2val')}</th>
   <th class="col-source">{_source_tag('s2val')}</th>
 </tr>
 </thead>
@@ -396,6 +399,41 @@ def _build_detail_panel(
             sections.append(
                 f"<h4>Overall Assessment {s2val}</h4><p>{_escape(va.overall_assessment)}</p>"
             )
+
+        # Inclusion criteria
+        if va.inclusion_score:
+            ic = va.inclusion_score
+            criteria_names = [
+                ("relevance", "Relevance"),
+                ("performance_orientation", "Performance Orientation"),
+                ("outcome_focus", "Outcome Focus"),
+                ("established_methodology", "Established Methodology"),
+                ("verified_results", "Verified Results"),
+                ("spatial_completeness", "Spatial Completeness"),
+                ("temporal_completeness", "Temporal Completeness"),
+                ("recency", "Recency"),
+                ("open_access", "Open Access"),
+            ]
+            ic_chips = []
+            for field_name, label in criteria_names:
+                value = getattr(ic, field_name, None)
+                if value is True:
+                    ic_chips.append(f'<span class="flag-chip flag-pass">PASS {_escape(label)}</span>')
+                elif value is False:
+                    ic_chips.append(f'<span class="flag-chip flag-fail">FAIL {_escape(label)}</span>')
+                else:
+                    ic_chips.append(
+                        f'<span class="flag-chip" style="background:#f5f5f5;color:#8a8a8a;'
+                        f'border:1px solid #8a8a8a30">N/A {_escape(label)}</span>'
+                    )
+
+            met_str = f"{ic.criteria_met}/9" if ic.criteria_met is not None else "—"
+            sections.append(
+                f'<h4>EPI Inclusion Criteria {s2val} — {met_str}</h4>'
+                f'<div class="flag-chips">{"".join(ic_chips)}</div>'
+            )
+            if ic.criteria_notes:
+                sections.append(f"<p>{_escape(ic.criteria_notes)}</p>")
     else:
         sections.append(
             f'<h4>Validation {s2val}</h4>'
@@ -439,7 +477,7 @@ def _build_row(
             f"<td>{row_id}</td>"
             f'<td class="proxy-col">{proxy_name}</td>'
             f'<td><span class="verdict-badge" style="background:#f5f5f5;color:#8a8a8a;border-color:#8a8a8a40">not verified</span></td>'
-            f"<td>—</td><td>—</td><td>—</td><td>—</td>"
+            f"<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>"
             f"</tr>\n"
         )
 
@@ -463,6 +501,18 @@ def _build_row(
     # Validation
     val_label, val_color = _validation_status(vr.validation)
 
+    # Inclusion score
+    incl_html = "—"
+    if vr.validation and vr.validation.inclusion_score and vr.validation.inclusion_score.criteria_met is not None:
+        met = vr.validation.inclusion_score.criteria_met
+        if met >= 7:
+            incl_color = "#2e7d32"
+        elif met >= 5:
+            incl_color = "#bf6900"
+        else:
+            incl_color = "#c62828"
+        incl_html = f'<span style="color:{incl_color};font-weight:600">{met}/9</span>'
+
     summary_tr = (
         f'<tr class="summary-row" data-id="{row_id}">'
         f"<td>{row_id}</td>"
@@ -472,12 +522,13 @@ def _build_row(
         f"<td>{p_val}</td>"
         f"<td>{n_val}</td>"
         f'<td style="color:{val_color}">{_escape(val_label)}</td>'
+        f"<td>{incl_html}</td>"
         f"</tr>\n"
     )
 
     detail_tr = (
         f'<tr class="detail-row" id="detail-{row_id}">'
-        f'<td colspan="7">{_build_detail_panel(hyp, vr)}</td>'
+        f'<td colspan="8">{_build_detail_panel(hyp, vr)}</td>'
         f"</tr>\n"
     )
 

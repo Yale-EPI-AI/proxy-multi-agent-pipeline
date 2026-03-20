@@ -47,6 +47,29 @@ These variables correlate with nearly every EPI indicator because they reflect o
 
 The ideal proxy is something a data scientist could download, merge with EPI country data by ISO code + year, and run a correlation — not a broad development indicator.
 
+## EPI Inclusion Criteria (for flagging, not filtering)
+
+The EPI uses 9 inclusion criteria for data sources. Please keep these in mind when assessing proxies, \
+but do NOT let them prevent you from suggesting creative or novel proxies. Flag concerns rather than \
+filtering candidates out — we want to know about promising proxies even if they don't meet every criterion.
+
+1. **Relevance**: Data measures something directly related to the target environmental issue
+2. **Performance orientation**: Data can distinguish better-performing from worse-performing countries
+3. **Outcome focus**: Data reflects actual environmental outcomes (not just policies or inputs)
+4. **Established methodology**: Data collection follows a peer-reviewed, international org, or government-official methodology
+5. **Verified results**: Data has been validated or cross-checked by independent parties
+6. **Spatial completeness**: Data covers at least 80 countries
+7. **Temporal completeness**: Data includes at least 3 time points (years)
+8. **Recency**: Data includes observations from 2018 or later
+9. **Open access**: Data is freely available without paid subscriptions
+
+In the Data Availability Assessment section, please include for each proxy:
+- Estimated number of countries covered
+- Year range of available data
+- Update frequency (annual, biennial, irregular, one-time)
+- Methodology status (peer-reviewed, international org, government official, grey literature)
+- Data type (satellite, survey, modeled, administrative, sensor, trade statistics, etc.)
+
 ## Required Sections
 
 ### 1. Causal Map
@@ -143,7 +166,12 @@ into a JSON array. Each element must conform to this schema:
     "url": "string or null",
     "format": "string or null (CSV, API, etc.)",
     "accessibility": "open|free_account|paid|restricted|unknown",
-    "coverage": "string or null (e.g. '150 countries, 2000-2022')"
+    "coverage": "string or null (e.g. '150 countries, 2000-2022')",
+    "country_count_estimate": "integer or null (e.g. 150)",
+    "temporal_span": "string or null (e.g. '2000-2022')",
+    "update_frequency": "annual|biennial|irregular|one_time|unknown",
+    "methodology_status": "peer_reviewed|international_org|government_official|grey_literature|unknown",
+    "data_type": "string or null (e.g. 'satellite', 'survey', 'modeled', 'administrative')"
   }},
   "confidence": "literature_backed|speculative|expert_opinion",
   "evidence_type": "literature_attested|programmatic_verify|manual_data_needed",
@@ -198,6 +226,18 @@ URLs over abbreviated site names.
 15. EXCLUDE any hypothesis where the proxy is a broad development or governance indicator \
 (GDP, GNI, HDI, urbanization rate, population, government effectiveness, rule of law, \
 regulatory quality, CPI). These are known confounders, not proxies.
+16. For the `data_source` object, extract the 5 metadata fields when available from the report:
+    - `country_count_estimate`: Extract the number of countries covered (as integer). \
+If the report says "global" or "worldwide", estimate 180. If "OECD", estimate 38.
+    - `temporal_span`: Extract the year range (e.g. "2000-2022"). Look for phrases like \
+"data from 2000 to 2022" or "covers 1990-2020".
+    - `update_frequency`: Classify as "annual", "biennial", "irregular", or "one_time". \
+Default to "unknown" if not mentioned.
+    - `methodology_status`: Classify as "peer_reviewed" (academic papers), "international_org" \
+(UN, WHO, World Bank, OECD), "government_official" (national statistics offices), \
+"grey_literature" (reports, blogs, unpublished), or "unknown".
+    - `data_type`: Classify the measurement approach (e.g. "satellite", "survey", "modeled", \
+"administrative", "sensor", "trade statistics"). Default to null if unclear.
 
 Also extract a brief causal map summary (2-3 sentences) from the "Causal Map" section.
 

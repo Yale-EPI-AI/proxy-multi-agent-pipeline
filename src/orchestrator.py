@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt
 
-from src.config import OUTPUTS_DIR, API_RETRY_ATTEMPTS, API_RETRY_BACKOFF, MAX_HYPOTHESES
+from src.config import OUTPUTS_DIR, API_RETRY_ATTEMPTS, API_RETRY_BACKOFF, INCLUSION_BINDING_MODE, MAX_HYPOTHESES
 from src.schemas import EvidenceType, PipelineResult, ProxyHypothesis, ResearchOutput, VerificationMethod, VerificationResult, Verdict
 from src.utils.data_utils import load_variable_metadata, get_available_indicators
 
@@ -146,6 +146,7 @@ async def run_stage2(
     tla: str,
     hypotheses: list[ProxyHypothesis],
     max_hypotheses: int = MAX_HYPOTHESES,
+    inclusion_mode: str | None = None,
 ) -> list[VerificationResult]:
     """Run Stage 2: verify each hypothesis, routing by evidence_type."""
     from src.stage2.verifier import verify_hypothesis
@@ -250,14 +251,28 @@ async def run_stage2(
             try:
                 from src.stage2.validator import validate_result
 
-                annotation = await validate_result(hyp, result, output_dir)
-                if annotation:
+                validation_output = await validate_result(
+                    hyp, result, output_dir,
+                    inclusion_binding_mode=inclusion_mode,
+                )
+                if validation_output:
+                    annotation, adjusted_verdict = validation_output
                     result.validation = annotation
+                    if adjusted_verdict != result.verdict:
+                        console.print(
+                            f"    Inclusion gate: {result.verdict.value} -> {adjusted_verdict.value}"
+                        )
+                        result.verdict = adjusted_verdict
                     n_issues = len(annotation.issues)
                     if n_issues == 0:
                         console.print("    Validation: [green]clean[/green]")
                     else:
                         console.print(f"    Validation: [yellow]{n_issues} issue(s)[/yellow]")
+                    # Show inclusion score if available
+                    if annotation.inclusion_score and annotation.inclusion_score.criteria_met is not None:
+                        console.print(
+                            f"    Inclusion: {annotation.inclusion_score.criteria_met}/9 criteria met"
+                        )
             except Exception as val_err:
                 logger.debug("Validation failed for %s: %s", hyp.id, val_err)
 
@@ -296,6 +311,7 @@ def print_summary(result: PipelineResult) -> None:
         table.add_column("p-value", style="yellow")
         table.add_column("n", style="dim")
         table.add_column("Validation", style="white")
+        table.add_column("Inclusion", style="white")
         table.add_column("Summary")
 
         for vr in result.verification_results:
@@ -323,6 +339,12 @@ def print_summary(result: PipelineResult) -> None:
             else:
                 val_str = "[dim]—[/dim]"
 
+            # Inclusion score
+            if vr.validation and vr.validation.inclusion_score and vr.validation.inclusion_score.criteria_met is not None:
+                incl_str = f"{vr.validation.inclusion_score.criteria_met}/9"
+            else:
+                incl_str = "[dim]—[/dim]"
+
             table.add_row(
                 vr.hypothesis_id,
                 hyp_evidence.get(vr.hypothesis_id, ""),
@@ -332,6 +354,7 @@ def print_summary(result: PipelineResult) -> None:
                 p_val,
                 n_val,
                 val_str,
+                incl_str,
                 (vr.summary[:60] + "...") if len(vr.summary) > 60 else vr.summary,
             )
 
@@ -390,7 +413,11 @@ async def run_pipeline(args: argparse.Namespace) -> None:
     # Stage 2
     verification_results = []
     if args.stage in ("2", "both") and hypotheses:
-        verification_results = await run_stage2(tla, hypotheses, args.max_hypotheses)
+        inclusion_mode = getattr(args, "inclusion_mode", None)
+        verification_results = await run_stage2(
+            tla, hypotheses, args.max_hypotheses,
+            inclusion_mode=inclusion_mode,
+        )
 
     # Aggregate results
     pipeline_result = PipelineResult(
@@ -552,6 +579,12 @@ def main() -> None:
         "--verbose", "-v",
         action="store_true",
         help="Enable verbose logging",
+    )
+    parser.add_argument(
+        "--inclusion-mode",
+        choices=["advisory", "soft_gate", "hard_gate"],
+        default=None,
+        help="Inclusion criteria binding mode (overrides config; default: advisory)",
     )
     parser.add_argument(
         "--list-indicators",

@@ -43,6 +43,18 @@ PARTIAL_CORR_MIN_N = 30            # minimum observations for partial correlatio
 VERDICT_R_STRONG = 0.5             # |r| threshold for confirmed without partial corr
 VERDICT_P_STRICT = 0.01            # p threshold for confirmed without partial corr
 
+# ── Inclusion Criteria Thresholds ─────────────────────────────────────────────
+INCLUSION_BINDING_MODE = "advisory"       # "advisory" | "soft_gate" | "hard_gate"
+INCLUSION_MIN_COUNTRIES = 80              # spatial completeness threshold
+INCLUSION_MIN_YEARS = 3                   # temporal completeness threshold
+INCLUSION_RECENCY_CUTOFF = 2018           # data must include years >= this
+INCLUSION_CRITICAL_CRITERIA = [           # criteria that trigger hard_gate rejection
+    "spatial_completeness",
+    "established_methodology",
+    "open_access",
+]
+INCLUSION_SOFT_GATE_MIN_SCORE = 5         # min criteria_met to avoid verdict downgrade
+
 # ── Pipeline Defaults ──────────────────────────────────────────────────────────
 MAX_HYPOTHESES = 10
 DEEP_RESEARCH_POLL_INTERVAL = 10  # seconds between status checks

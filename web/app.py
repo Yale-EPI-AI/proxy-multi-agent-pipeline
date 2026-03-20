@@ -732,7 +732,18 @@ def build_app() -> gr.Blocks:
         with gr.Tab("Presentation [EPI]"):
             gr.HTML(_load_presentation2())
 
-        # ── Tab 5: Domain Knowledge ───────────────────────────────────
+        # ── Tab 5: Knowledge Graph ────────────────────────────────────
+        with gr.Tab("Knowledge Graph"):
+            kg_path = OUTPUTS_DIR / "knowledge_graph" / "graph.html"
+            if kg_path.exists():
+                gr.HTML(_wrap_in_iframe(kg_path.read_text(encoding="utf-8"), height="90vh"))
+            else:
+                gr.Markdown(
+                    "_Knowledge graph not yet compiled. "
+                    "Run `python scripts/compile_knowledge_graph.py` to generate it._"
+                )
+
+        # ── Tab 6: Domain Knowledge ───────────────────────────────────
         with gr.Tab("Indicator Reference"):
             gr.HTML(_wrap_in_iframe(_build_domain_knowledge_html()))
 

@@ -514,6 +514,24 @@ Write 2-3 sentences explaining the causal mechanism connecting the proxy to the 
 indicator. This should be a clear narrative, not a statistical summary. If the mechanism
 is implausible, say so.
 
+## EPI Inclusion Criteria Assessment
+
+In addition to the 6-point checklist, assess the proxy data source against the EPI's 9 inclusion
+criteria. For each criterion, set true (met), false (not met), or null (cannot determine):
+
+1. **relevance**: Data measures something directly related to the target environmental issue
+2. **performance_orientation**: Data can distinguish better-performing from worse-performing countries
+3. **outcome_focus**: Data reflects actual environmental outcomes (not just policies or inputs)
+4. **established_methodology**: Data follows a peer-reviewed, international org, or government-official methodology
+5. **verified_results**: Data has been validated or cross-checked by independent parties
+6. **spatial_completeness**: Data covers at least 80 countries (check the merged dataset size and hypothesis metadata)
+7. **temporal_completeness**: Data includes at least 3 time points/years
+8. **recency**: Data includes observations from 2018 or later
+9. **open_access**: Data is freely available without paid subscriptions
+
+Count the number of criteria that are explicitly true (not null) in `criteria_met`.
+Provide a brief rationale in `criteria_notes` explaining key strengths or gaps.
+
 ## Output Format
 
 Return a single JSON object (NO markdown fences, NO commentary outside the JSON):
@@ -526,7 +544,20 @@ Return a single JSON object (NO markdown fences, NO commentary outside the JSON)
   "outlier_concerns": true/false,
   "mechanistic_explanation": "2-3 sentence causal narrative",
   "issues": ["list of specific issues found, empty if clean"],
-  "overall_assessment": "clean | minor_issues | major_issues"
+  "overall_assessment": "clean | minor_issues | major_issues",
+  "inclusion_score": {
+    "relevance": true/false/null,
+    "performance_orientation": true/false/null,
+    "outcome_focus": true/false/null,
+    "established_methodology": true/false/null,
+    "verified_results": true/false/null,
+    "spatial_completeness": true/false/null,
+    "temporal_completeness": true/false/null,
+    "recency": true/false/null,
+    "open_access": true/false/null,
+    "criteria_met": 0-9,
+    "criteria_notes": "brief rationale"
+  }
 }
 """
 

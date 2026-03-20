@@ -52,6 +52,22 @@ class Accessibility(str, Enum):
     unknown = "unknown"
 
 
+class MethodologyStatus(str, Enum):
+    peer_reviewed = "peer_reviewed"
+    international_org = "international_org"
+    government_official = "government_official"
+    grey_literature = "grey_literature"
+    unknown = "unknown"
+
+
+class UpdateFrequency(str, Enum):
+    annual = "annual"
+    biennial = "biennial"
+    irregular = "irregular"
+    one_time = "one_time"
+    unknown = "unknown"
+
+
 class EvidenceType(str, Enum):
     literature_attested = "literature_attested"   # paper reports a relationship directly
     programmatic_verify = "programmatic_verify"   # data fetchable via WB/WHO/local
@@ -79,6 +95,11 @@ class DataSource(BaseModel):
     format: Optional[str] = Field(default=None, description="e.g. 'CSV', 'API', 'Excel'")
     accessibility: Accessibility = Accessibility.unknown
     coverage: Optional[str] = Field(default=None, description="e.g. '150 countries, 2000-2022'")
+    country_count_estimate: Optional[int] = Field(default=None, description="e.g. 150")
+    temporal_span: Optional[str] = Field(default=None, description="e.g. '2000-2022'")
+    update_frequency: Optional[UpdateFrequency] = None
+    methodology_status: Optional[MethodologyStatus] = None
+    data_type: Optional[str] = Field(default=None, description="e.g. 'satellite', 'survey', 'modeled'")
 
 
 class ProxyHypothesis(BaseModel):
@@ -106,6 +127,22 @@ class ResearchOutput(BaseModel):
     raw_report_path: Optional[str] = None
 
 
+# ── Inclusion Criteria ────────────────────────────────────────────────────────
+
+class InclusionCriteriaScore(BaseModel):
+    relevance: Optional[bool] = None
+    performance_orientation: Optional[bool] = None
+    outcome_focus: Optional[bool] = None
+    established_methodology: Optional[bool] = None
+    verified_results: Optional[bool] = None
+    spatial_completeness: Optional[bool] = None
+    temporal_completeness: Optional[bool] = None
+    recency: Optional[bool] = None
+    open_access: Optional[bool] = None
+    criteria_met: Optional[int] = Field(default=None, description="Count of True values (0-9)")
+    criteria_notes: str = ""
+
+
 # ── Validation Annotation ─────────────────────────────────────────────────────
 
 class ValidationAnnotation(BaseModel):
@@ -118,6 +155,7 @@ class ValidationAnnotation(BaseModel):
     mechanistic_explanation: str = ""
     issues: list[str] = Field(default_factory=list)
     overall_assessment: str = ""
+    inclusion_score: Optional[InclusionCriteriaScore] = None
 
 
 # ── Stage 2 Results ────────────────────────────────────────────────────────────
