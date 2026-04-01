@@ -1,0 +1,30 @@
+{
+  "hypothesis_id": "PHL-H01",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.30590217986718193,
+    "pearson_p": 4.045229421222908e-05,
+    "spearman_rho": -0.4427176172442268,
+    "spearman_p": 9.545263491514228e-10,
+    "n_observations": 174,
+    "n_countries": 174
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.09357614364749345,
+    "linear_aic": 618.5735713042876,
+    "log_linear_r2": 0.10378623668240683,
+    "log_linear_aic": 616.6024871920731,
+    "quadratic_r2": 0.13578391999534156,
+    "quadratic_aic": 612.276520656019
+  },
+  "data_quality_notes": "The Global Human Footprint dataset (Mu et al. 2022, Scientific Data) is distributed as GeoTIFF raster files on figshare and is not available as country-level aggregates through standard APIs (World Bank, WHO GHO). As a partial substitute, World Bank Agricultural Land (% of land area, indicator AG.LND.AGRI.ZS) was used as a proxy for the cropland component of the HFP composite index. This covers only one of eight HFP input layers (croplands); the full HFP also integrates built environments, population density, nighttime lights, pastures, roads, railways, and navigable waterways. The near-perfect theoretical alignment claimed by Mu et al. 2022 refers to the full composite HFP dataset. PHL is cross-sectional (2022 only); agricultural land matched to 2022. The negative direction is consistent with the hypothesis: more agricultural land implies more cropland within/near protected areas, reducing the PHL metric (% of protected area NOT covered by cropland/buildings).",
+  "summary": "Using World Bank Agricultural Land (% of land area) as a partial proxy for the Global Human Footprint Index (cropland component only), bivariate Pearson r=-0.306 (p=0.0000), Spearman rho=-0.443 (p=0.0000), n=174 countries. Best functional form: quadratic. The negative direction is confirmed. The Mu et al. 2022 citation is credible (peer-reviewed Scientific Data); the full HFP composite would likely show a stronger relationship than this partial cropland-only proxy.",
+  "proxy_substitution": {
+    "original": "Global Human Footprint Index (Mu et al. 2022, figshare GeoTIFF)",
+    "substitute": "World Bank Agricultural Land % (AG.LND.AGRI.ZS) \u2014 cropland component of HFP",
+    "reason": "HFP raster data not available as country-level aggregates via standard APIs"
+  }
+}

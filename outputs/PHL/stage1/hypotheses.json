@@ -1,0 +1,322 @@
+{
+  "indicator_tla": "PHL",
+  "causal_map_summary": "Human encroachment in protected areas is driven by upstream factors like infrastructure expansion (roads), legal rollbacks (PADDD events), and economic pressures from global commodity demand. The proximate causes include slash-and-burn clearing (detectable as active fires) and land grabbing, which directly create croplands and buildings within protected areas. This encroachment leads to downstream effects including biodiversity loss, habitat fragmentation, carbon emissions, and altered disturbance regimes.",
+  "hypotheses": [
+    {
+      "id": "PHL-H01",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-2020",
+        "subpopulations": null
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Global Human Footprint Index",
+      "proxy_description": "Cumulative pressure of human activities on terrestrial ecosystems, integrating built environments, population density, nighttime lights, croplands, pastures, roads, railways, and navigable waterways",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "log-linear",
+        "strength_estimate": "near-perfect inverse theoretical alignment"
+      },
+      "mechanism": "HFP explicitly utilizes 'croplands' and 'built environments' as two of its primary weighted input layers, so an increase in HFP within a protected area mathematically guarantees a decrease in PHL",
+      "data_source": {
+        "name": "Global Human Footprint dataset",
+        "organization": "Multiple iterations, prominently Mu et al. (2022)",
+        "url": "https://figshare.com",
+        "format": "GeoTIFF raster files",
+        "accessibility": "open",
+        "coverage": "Global terrestrial surfaces at 1 km and 100 m resolutions, 2000-2018",
+        "country_count_estimate": 190,
+        "temporal_span": "2000-2018",
+        "update_frequency": "annual",
+        "methodology_status": "peer_reviewed",
+        "data_type": "modeled satellite"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Near-perfect inverse theoretical alignment with PHL because HFP explicitly uses croplands and built environments as primary input layers (Mu et al. 2022, Scientific Data)",
+      "caveats": [
+        "Composite of 8 variables, captures population density and grazing/pasture in addition to crops and buildings",
+        "Minor noise if EPI team wants to isolate only buildings and crops"
+      ],
+      "references": [
+        "https://figshare.com"
+      ]
+    },
+    {
+      "id": "PHL-H02",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-2024",
+        "subpopulations": null
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Global Cropland Extent",
+      "proxy_description": "High-resolution (30-meter), multi-decadal mapping of global cropland extent derived from Landsat satellite imagery, strictly defining cropland as land used for annual and perennial herbaceous crops",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "direct, 1:1 volumetric proxy"
+      },
+      "mechanism": "This dataset maps exactly what PHL seeks to measure (cropland area), providing a direct linear proxy for the agricultural component of PHL when masked against protected areas",
+      "data_source": {
+        "name": "GLAD & GACED30",
+        "organization": "Global Land Analysis and Discovery Lab (GLAD) at University of Maryland, Chen/Lou et al.",
+        "url": "https://zenodo.org",
+        "format": "Cloud-optimized GeoTIFFs, accessible via Google Earth Engine",
+        "accessibility": "open",
+        "coverage": "Global, 2000-2022/2024",
+        "country_count_estimate": 190,
+        "temporal_span": "2000-2024",
+        "update_frequency": "annual",
+        "methodology_status": "peer_reviewed",
+        "data_type": "satellite"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Direct 1:1 volumetric proxy for cropland component, with global cropland expansion accelerating in 21st century and half of new cropland replacing natural vegetation in conservation zones (Potapov et al. 2022, Nature Food)",
+      "caveats": [
+        "Does not map buildings or urbanization, must be paired with urban/built-environment dataset",
+        "GLAD uses 4-year epochs to mitigate cloud cover, may smooth true annual variation"
+      ],
+      "references": [
+        "https://zenodo.org"
+      ]
+    },
+    {
+      "id": "PHL-H03",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-present",
+        "subpopulations": "protected areas"
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Road Density in Protected Areas",
+      "proxy_description": "Road density (meters of road per square kilometer) measured explicitly inside the boundaries of protected areas, serving as primary conduit for agricultural expansion and human settlement",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "quadratic",
+        "strength_estimate": "strongest correlate of deforestation out of 38 covariates"
+      },
+      "mechanism": "Roads serve as the primary vector for human encroachment, lowering economic barriers to entry for agricultural expansion and settlement. Road density is the strongest predictor of deforestation and subsequent cropland establishment",
+      "data_source": {
+        "name": "Global Roads Inventory Project (GRIP) and Ghost Roads",
+        "organization": "GLOBIO, supplemented by Engert et al. (2024)",
+        "url": "https://globio.info",
+        "format": "Vector (ESRI file geodatabase/shapefile) and Raster",
+        "accessibility": "open",
+        "coverage": "Global, 222 countries, ~21 million km of official roads plus 1.37 million km unmapped roads",
+        "country_count_estimate": 222,
+        "temporal_span": "various",
+        "update_frequency": "irregular",
+        "methodology_status": "peer_reviewed",
+        "data_type": "administrative"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Road density was by far the strongest correlate of deforestation out of 38 potential biophysical and socioeconomic covariates (Engert et al. 2024, Nature)",
+      "caveats": [
+        "Official datasets heavily underestimate informal, illegal, or unpaved roads most likely in protected areas",
+        "Relationship is non-linear with deforestation peaking after initial road penetration"
+      ],
+      "references": [
+        "https://globio.info"
+      ]
+    },
+    {
+      "id": "PHL-H04",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "1892-2021",
+        "subpopulations": "protected areas"
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "PADDD Events",
+      "proxy_description": "Protected Area Downgrading, Downsizing, and Degazettement events tracking legal changes that decrease restrictions on human activities or reduce protected area size",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "62% of PADDD events driven by agriculture/development"
+      },
+      "mechanism": "PADDD events legally authorize increased human use including agriculture and infrastructure development. When governments downgrade PA status, expansion of croplands and buildings is the immediate intended or unintended result",
+      "data_source": {
+        "name": "PADDDtracker",
+        "organization": "Conservation International and World Wildlife Fund",
+        "url": "https://zenodo.org",
+        "format": "Geospatial database and CSV",
+        "accessibility": "open",
+        "coverage": "4,962 enacted events across 78 countries from 1892 to 2021",
+        "country_count_estimate": 78,
+        "temporal_span": "1892-2021",
+        "update_frequency": "irregular",
+        "methodology_status": "international_org",
+        "data_type": "administrative"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Globally, 62% of all PADDD events are explicitly driven by the need for agriculture, mining, oil/gas, and industrialization (Conservation International & WWF 2021)",
+      "caveats": [
+        "Only tracks legal rollbacks, misses illegal informal encroachment",
+        "Covers 78 countries, falls short of EPI's 80-country criteria",
+        "Excellent for developed nations but may underestimate encroachment in Global South"
+      ],
+      "references": [
+        "https://zenodo.org"
+      ]
+    },
+    {
+      "id": "PHL-H05",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-present",
+        "subpopulations": null
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Biodiversity Intactness Index",
+      "proxy_description": "Modelled average abundance of originally-present species in a grid cell, relative to their abundance in an intact ecosystem, serving as comprehensive indicator of ecological impact of land-use change",
+      "relationship": {
+        "direction": "positive",
+        "functional_form": "linear",
+        "strength_estimate": "severe drop in BII where habitat transitions to agriculture"
+      },
+      "mechanism": "BII is mathematically constructed using land-use change and human pressure data. As percentage of cropland/buildings increases, BII decreases proportionately due to habitat loss and fragmentation",
+      "data_source": {
+        "name": "Biodiversity Intactness Index",
+        "organization": "Natural History Museum (NHM), UK, utilizing PREDICTS database",
+        "url": "https://nhm.ac.uk",
+        "format": "CSV, JSON, GeoTIFF",
+        "accessibility": "open",
+        "coverage": "Global, 100-meter resolution, 2000 onwards",
+        "country_count_estimate": 190,
+        "temporal_span": "2000-present",
+        "update_frequency": "annual",
+        "methodology_status": "peer_reviewed",
+        "data_type": "modeled"
+      },
+      "confidence": "literature_backed",
+      "evidence_type": "literature_attested",
+      "literature_evidence": "Severe drop in BII values where natural habitat transitions to agricultural or built environments, serving as inverted mirror to PHL (Newbold et al. 2016, Science)",
+      "caveats": [
+        "Modelled outcome rather than direct physical measurement",
+        "Relies on underlying land-use maps to model species abundance",
+        "Somewhat circular if EPI wants strictly physical land cover measurement"
+      ],
+      "references": [
+        "https://nhm.ac.uk"
+      ]
+    },
+    {
+      "id": "PHL-H07",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2012-present",
+        "subpopulations": "protected areas"
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Nighttime Lights in Protected Areas",
+      "proxy_description": "Sum of artificial nighttime light radiance within protected area boundaries, serving as proxy for human settlement, infrastructure development, and industrial activity",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "log-linear",
+        "strength_estimate": "strong (estimated)"
+      },
+      "mechanism": "Nighttime lights are the gold standard proxy for human settlement and infrastructure. If a protected area is truly undisturbed, nighttime light radiance should be near zero. Increases indicate construction of buildings, facilities, and roads",
+      "data_source": {
+        "name": "VIIRS Day/Night Band Nighttime Lights",
+        "organization": "Earth Observation Group (EOG)",
+        "url": null,
+        "format": "Monthly and annual composites",
+        "accessibility": "open",
+        "coverage": "Global",
+        "country_count_estimate": 190,
+        "temporal_span": "2012-present",
+        "update_frequency": "annual",
+        "methodology_status": "government_official",
+        "data_type": "satellite"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Initial transition from 0 to some buildings causes massive percentage jump in radiance"
+      ],
+      "references": []
+    },
+    {
+      "id": "PHL-H08",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "2000-present",
+        "subpopulations": "protected areas in forested biomes"
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Tree Cover Loss in Protected Areas",
+      "proxy_description": "Percentage of tree cover loss inside protected areas over time, serving as prerequisite to human encroachment in forested protected areas",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "very strong (estimated)"
+      },
+      "mechanism": "In forested biomes, croplands and buildings cannot be established without first removing the canopy. Tree cover loss is the absolute prerequisite to human encroachment, with vast majority of deforestation in tropical PAs being anthropogenic and driven by agricultural expansion",
+      "data_source": {
+        "name": "Hansen Global Forest Change dataset",
+        "organization": "University of Maryland / Global Forest Watch",
+        "url": null,
+        "format": "Raster",
+        "accessibility": "open",
+        "coverage": "Global, 30m resolution, annual updates from 2000",
+        "country_count_estimate": 190,
+        "temporal_span": "2000-present",
+        "update_frequency": "annual",
+        "methodology_status": "peer_reviewed",
+        "data_type": "satellite"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Only applicable to forested biomes",
+        "Tree cover loss can occasionally result from natural disasters"
+      ],
+      "references": []
+    },
+    {
+      "id": "PHL-H09",
+      "context": {
+        "geographic_scope": "global",
+        "time_period": "annual data available",
+        "subpopulations": "countries with high land scarcity"
+      },
+      "target_variable": "PHL",
+      "proxy_variable": "Agricultural Input Pressure Ratio",
+      "proxy_description": "Country's total synthetic fertilizer consumption divided by officially recognized arable land outside of protected areas",
+      "relationship": {
+        "direction": "negative",
+        "functional_form": "threshold",
+        "strength_estimate": "moderate (estimated)"
+      },
+      "mechanism": "If a country has rapidly growing fertilizer imports but stagnant official arable land, it indicates aggressive agricultural intensification. In countries with high land scarcity, this pressure forces farmers to expand into protected areas",
+      "data_source": {
+        "name": "FAOSTAT",
+        "organization": "Food and Agriculture Organization of the UN",
+        "url": null,
+        "format": "CSV/API",
+        "accessibility": "open",
+        "coverage": "Global country-level data",
+        "country_count_estimate": 180,
+        "temporal_span": "varies by indicator",
+        "update_frequency": "annual",
+        "methodology_status": "international_org",
+        "data_type": "administrative"
+      },
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
+      "caveats": [
+        "Indirect macroeconomic proxy",
+        "Encroachment accelerates only when certain density/scarcity threshold is reached",
+        "May not capture illegal expansion patterns"
+      ],
+      "references": []
+    }
+  ]
+}

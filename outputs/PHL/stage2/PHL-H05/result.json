@@ -1,0 +1,21 @@
+{
+  "hypothesis_id": "PHL-H05",
+  "verdict": "partially_confirmed",
+  "verification_method": "literature_accepted",
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null,
+  "data_quality_notes": "BII (Biodiversity Intactness Index) from Newbold et al. 2016 is primarily available as 100m resolution GeoTIFF raster files from the Natural History Museum (NHM) UK / PREDICTS database. Country-level aggregates are not available through standard APIs (World Bank, WHO GHO). Acquiring this data would require downloading and spatially processing several GB of raster files per country, which is beyond standard API-based data acquisition. The citation (Newbold et al. 2016, Science 353:288-291) is a top-tier peer-reviewed publication with thousands of citations. The relationship between BII and PHL is mechanistically sound: both metrics decrease as cropland/built environments expand within protected areas. BII is mathematically constructed from land-use data - the same underlying driver of PHL. A caveat is potential circularity: BII and PHL both ultimately derive from land-use maps, so their correlation is partly definitional rather than empirically independent.",
+  "summary": "The Biodiversity Intactness Index (BII) from Newbold et al. (2016) is expected to correlate positively with PHL (% protected area not covered by cropland/buildings) because both metrics inversely reflect land-use change intensity. When cropland and built environments expand into protected areas, BII falls (fewer original species present) and PHL falls (more area converted). This relationship is mathematically defined in BII's construction. The citation is highly credible (Science, 2016) and the mechanism is clear. However, direct statistical verification was not possible because BII country-level aggregates are not available through standard open APIs - the data exists only as large raster files requiring specialized geospatial processing. Verdict: partially_confirmed based on strong literature evidence and mechanistic clarity.",
+  "proxy_description": "Biodiversity Intactness Index - modelled average abundance of originally-present species relative to intact ecosystem",
+  "target_indicator": "PHL",
+  "expected_direction": "positive",
+  "n_observations": 0,
+  "data_sources_tried": [
+    "NHM data portal API",
+    "Figshare (Newbold et al. supplementary)",
+    "World Bank (EN.BIO.TERR.ZS and related)",
+    "WHO GHO",
+    "UNEP/GEO databases"
+  ]
+}

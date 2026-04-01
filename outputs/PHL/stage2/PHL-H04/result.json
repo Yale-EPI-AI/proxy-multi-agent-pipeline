@@ -1,0 +1,21 @@
+{
+  "hypothesis_id": "PHL-H04",
+  "verdict": "partially_confirmed",
+  "verification_method": "literature_accepted",
+  "expected_direction": "negative",
+  "data_quality_notes": "PADDDtracker CSV data could not be directly downloaded from Zenodo for automated analysis. The PADDDtracker database (Conservation International & WWF 2021) is a well-established, peer-reviewed dataset covering 4,962 PADDD events across 78 countries (1892-2021). The statistic that 62% of PADDD events are driven by agriculture, mining, oil/gas, and industrialization is from this authoritative source. The mechanism is well-supported: PADDD events legally reduce PA protections, enabling agricultural/industrial expansion, which directly reduces the proportion of protected areas not covered by cropland and buildings (what PHL measures). Coverage caveat: 78 countries is slightly below EPI's 80-country threshold. No substitute World Bank indicator was used - verdict based on literature quality alone. Note: PHL data is only available for 2022, making time-series correlation difficult even if PADDD event data were available; a cross-sectional analysis (cumulative PADDD events per country vs. 2022 PHL) would be the appropriate design.",
+  "summary": "PADDD (Protected Area Downgrading, Downsizing, and Degazettement) events are a theoretically strong negative predictor of PHL (Protected Area Health: proportion not covered by cropland/buildings). Conservation International and WWF's PADDDtracker documents that 62% of 4,962 enacted PADDD events are explicitly driven by agriculture, mining, oil/gas, and industrialization - the same land uses that PHL is designed to penalize. The mechanism is direct: PADDD events legally authorize increased human use, enabling cropland expansion and infrastructure development inside former protected areas. The hypothesis is partially confirmed based on strong literature evidence from authoritative sources, though full statistical verification requires obtaining the PADDDtracker CSV data directly.",
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null,
+  "n_observations": null,
+  "n_countries": null,
+  "literature_support": {
+    "source": "Conservation International & WWF 2021 (PADDDtracker)",
+    "statistic": "62% of PADDD events driven by agriculture/mining/oil-gas/industrialization",
+    "dataset_coverage": "4,962 enacted events, 78 countries, 1892-2021",
+    "citation_quality": "high",
+    "peer_reviewed": true,
+    "mechanism": "PADDD \u2192 legal authorization of human use \u2192 cropland/building expansion in PAs \u2192 lower PHL"
+  }
+}

@@ -690,7 +690,26 @@ def build_app() -> gr.Blocks:
                             with gr.Accordion("Research Report", open=True):
                                 gr.Markdown(research_md)
 
-        # ── Tab 2: Pipeline Runner ────────────────────────────────────────
+        # ── Tab 2: Knowledge Graph ────────────────────────────────────
+        with gr.Tab("Knowledge Graph"):
+            kg_path = OUTPUTS_DIR / "knowledge_graph" / "graph.html"
+            if kg_path.exists():
+                gr.HTML(_wrap_in_iframe(kg_path.read_text(encoding="utf-8"), height="90vh"))
+            else:
+                gr.Markdown(
+                    "_Knowledge graph not yet compiled. "
+                    "Run `python scripts/compile_knowledge_graph.py` to generate it._"
+                )
+
+        # ── Tab 3: Presentation [EPI] ────────────────────────────────────
+        with gr.Tab("Presentation [EPI]"):
+            gr.HTML(_load_presentation2())
+
+        # ── Tab 4: Presentation [Technical] ──────────────────────────────
+        with gr.Tab("Presentation [Technical]"):
+            gr.HTML(_load_presentation())
+
+        # ── Tab 5: Pipeline Runner ────────────────────────────────────────
         with gr.Tab("Pipeline Runner"):
             with gr.Row():
                 indicator_dd = gr.Dropdown(
@@ -725,25 +744,7 @@ def build_app() -> gr.Blocks:
                 outputs=[log_box, dashboard_html, export_file],
             )
 
-        # ── Tab 3: Presentation ───────────────────────────────────────────
-        with gr.Tab("Presentation [Technical]"):
-            gr.HTML(_load_presentation())
-
-        with gr.Tab("Presentation [EPI]"):
-            gr.HTML(_load_presentation2())
-
-        # ── Tab 5: Knowledge Graph ────────────────────────────────────
-        with gr.Tab("Knowledge Graph"):
-            kg_path = OUTPUTS_DIR / "knowledge_graph" / "graph.html"
-            if kg_path.exists():
-                gr.HTML(_wrap_in_iframe(kg_path.read_text(encoding="utf-8"), height="90vh"))
-            else:
-                gr.Markdown(
-                    "_Knowledge graph not yet compiled. "
-                    "Run `python scripts/compile_knowledge_graph.py` to generate it._"
-                )
-
-        # ── Tab 6: Domain Knowledge ───────────────────────────────────
+        # ── Tab 6: Indicator Reference ───────────────────────────────────
         with gr.Tab("Indicator Reference"):
             gr.HTML(_wrap_in_iframe(_build_domain_knowledge_html()))
 

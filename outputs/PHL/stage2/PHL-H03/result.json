@@ -1,0 +1,10 @@
+{
+  "hypothesis_id": "PHL-H03",
+  "verdict": "partially_confirmed",
+  "verification_method": "literature_accepted",
+  "data_quality_notes": "Could not acquire road density data at the country-protected-area level. World Bank road density (IS.ROD.DNST.K2) was attempted but insufficient overlap with PHL target (2022) was found. The ideal GRIP dataset (globio.info) requires spatial intersection of road vector layers with WDPA protected area boundaries, producing per-country summaries of road density inside protected areas \u2014 this preprocessing is not available as a pre-computed tabular dataset. Engert et al. (2024, Nature) is a high-quality peer-reviewed source. Road density as a deforestation driver is well-established in ecology literature. Engert et al. (2024, Nature) identified road density as the strongest correlate of deforestation among 38 biophysical and socioeconomic covariates. GLOBIO (globio.info) provides the Global Roads Inventory Project (GRIP) dataset with ~21 million km of official roads across 222 countries. GLOBIO website accessible: True.",
+  "summary": "Road density in protected areas is a credible proxy for the PHL indicator (% protected area not covered by cropland/buildings) based on strong literature evidence. Engert et al. (2024, Nature) identified road density as the strongest correlate of deforestation among 38 covariates. However, the specific dataset (GRIP road density inside protected area boundaries) requires spatial preprocessing not available as tabular data, and World Bank road density indicators did not have sufficient coverage to run the full statistical pipeline. Verdict: partially_confirmed based on citation quality from a top-tier peer-reviewed source.",
+  "bivariate_correlation": null,
+  "partial_correlation": null,
+  "functional_form": null
+}

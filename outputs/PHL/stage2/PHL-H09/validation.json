@@ -1,0 +1,31 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": false,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that higher fertilizer consumption per unit of arable land indicates agricultural intensification pressure, which forces farmers in land-scarce countries to expand into protected areas, thereby reducing the Protected and Harvested Land (PHL) score. The causal chain assumes that fertilizer intensity signals where land pressure is greatest and thus where encroachment risk is highest.",
+  "issues": [
+    "YEAR ALIGNMENT CRITICAL: Proxy data (fertilizer kg/ha) from 2019–2022 most-recent-year-per-country is merged against PHL target data from 2022 only, matching on ISO code without enforcing temporal alignment. For ~93% of the 174 countries, the fertilizer observation is from a different year than 2022, yet treated as contemporaneous. This violates proxy-target temporal alignment.",
+    "HYPOTHESIS INTERPRETATION MISMATCH: Hypothesis specifies 'synthetic fertilizer consumption divided by officially recognized arable land OUTSIDE OF PROTECTED AREAS.' The World Bank AG.CON.FERT.ZS indicator is fertilizer per hectare of ALL arable land (no subtraction of protected areas). The script acknowledges this limitation in data_quality_notes but does not flag it as a material divergence from hypothesis specification.",
+    "DATA SOURCE SUBSTITUTION NOT DOCUMENTED: Hypothesis specifies FAOSTAT as data source; script uses World Bank AG.CON.FERT.ZS instead. While a reasonable proxy substitution, this is not the source specified in the hypothesis, and the shift from FAOSTAT to World Bank is not explicitly documented as a source change in result.json or marked in data_quality_notes as a substitution decision.",
+    "PARTIAL CORRELATION FAILED WITHOUT ROBUST FALLBACK: Partial correlation (controlling for GDP per capita) could not be computed due to numerical issues in pingouin. Script accepts this failure gracefully but does not attempt alternative methods (e.g., manual OLS residualization or robust regression). This weakens causal interpretation.",
+    "POTENTIAL OUTLIER INFLUENCE NOT ASSESSED: Script performs no outlier detection, leverage analysis, or sensitivity testing. With 174 countries and R² values < 0.009, the correlation is extremely weak; script does not investigate whether a few high-fertilizer or extreme-PHL countries are driving the null result.",
+    "WEAK EFFECT STRENGTH NOT CONTEXTUALIZED: Pearson r=0.076 (p=0.318) and Spearman rho=0.021 (p=0.782) are both non-significant and negligible. The verdict is 'rejected,' which is appropriate, but the script does not discuss whether the hypothesis mechanism might operate only in a subset (high land scarcity countries per hypothesis subpopulation definition) rather than globally."
+  ],
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": true,
+    "performance_orientation": true,
+    "outcome_focus": false,
+    "established_methodology": true,
+    "verified_results": null,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 6,
+    "criteria_notes": "Relevance: fertilizer intensity is directly related to agricultural pressure (true). Performance orientation: fertilizer per hectare distinguishes countries with different intensification regimes (true). Outcome focus: fertilizer consumption is an input/pressure, not a direct environmental outcome; encroachment into protected areas is the outcome, not captured by proxy (false). Established methodology: World Bank AG.CON.FERT.ZS follows FAO methodology and is widely used (true). Verified results: no independent validation mentioned (null). Spatial completeness: 174 countries in merged dataset exceeds 80-country threshold (true). Temporal completeness: fertilizer data span 2019–2022 (≥3 years), PHL only 2022 (true for proxy, problematic for alignment). Recency: includes 2022 data (true). Open access: World Bank data is freely available (true). Key weakness: proxy measures INPUT pressure, not OUTCOME (encroachment); temporal misalignment undermines causal inference."
+  }
+}

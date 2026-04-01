@@ -1,0 +1,32 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": false,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that tree cover loss in protected areas drives human encroachment in forested biomes, as croplands and buildings cannot be established without canopy removal. However, the verification agent used forest area (% of land) as a proxy, which is conceptually inverted: higher forest area suggests less historical loss, creating a positive rather than negative relationship with the target. This substitution breaks the causal chain specified in the hypothesis.",
+  "issues": [
+    "CRITICAL: Proxy variable is fundamentally different from hypothesis specification. Hypothesis requires 'tree cover loss' (a rate/change metric in protected areas), but agent used 'forest area' (a stock metric, global, not PA-specific). These are conceptually distinct variables.",
+    "CRITICAL: Year alignment problem. Proxy uses 'most recent available year per country' (likely 2020-2021) while target is year 2022. Cross-sectional merge on ISO only ignores temporal dimension entirely. Proxy year varies by country but is not aligned to target year.",
+    "CRITICAL: Data source not authentic. Hypothesis specifies Hansen Global Forest Change dataset (satellite raster at 30m resolution, requires GIS overlay with WDPA boundaries). Agent used World Bank tabular forest area indicator (AG.LND.FRST.ZS), which is a different data source with different methodology, not a reasonable substitution but a fundamental substitution.",
+    "Direction inversion: Hypothesis expects negative correlation (more tree loss → more encroachment). Agent reversed this to positive (more forest area → higher PHL score), then declared 'partially_confirmed' despite this direction flip. The verdict does not align with the original hypothesis direction.",
+    "Missing spatial specificity: Hypothesis explicitly targets 'protected areas in forested biomes.' Proxy is global forest area, not PA-specific, losing critical geographic scope.",
+    "No functional form or partial correlation results: Script attempted these analyses but did not include results in JSON output, limiting verification depth.",
+    "Data quality notes acknowledge the substitution but still yield 'partially_confirmed' verdict—this is inconsistent. A materially different proxy should typically warrant 'inconclusive' or 'unconfirmed' rather than 'partially_confirmed'."
+  ],
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": null,
+    "outcome_focus": false,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": false,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 4,
+    "criteria_notes": "The World Bank forest area indicator (AG.LND.FRST.ZS) used as proxy meets some EPI criteria: it follows established World Bank methodology (established_methodology: true), has verified international data (verified_results: true), covers 174+ countries (spatial_completeness: true), and is freely accessible (open_access: true). However, it fails critical criteria: it does not measure tree cover loss (relevance: false), does not reflect outcomes in protected areas (outcome_focus: false), and lacks temporal alignment to the 2022 target year (temporal_completeness: false). The proxy is a stock measure (total forest %), not a flow measure (annual loss rate), fundamentally misaligned with the hypothesis. The Hansen Global Forest Change dataset itself would score higher (7-8 criteria) if accessible, but the substitution undermines the entire verification."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": false,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that nighttime light radiance within protected area boundaries serves as a direct indicator of human settlement and infrastructure development inside those areas, with the expectation that truly undisturbed protected areas should have near-zero light emissions. However, the verification script substituted 'Access to electricity (%)' at the national level, which measures grid electrification across an entire country, not within-PA light emissions. This is a fundamentally different mechanism: national electricity access reflects broad development and infrastructure investment at the macro scale, whereas in-PA nighttime lights would capture localized disturbance within conservation boundaries.",
+  "issues": [
+    "CRITICAL: Proxy variable is materially different from hypothesis specification. Hypothesis targets VIIRS Nighttime Lights specifically within protected area boundaries (a spatially constrained, within-PA geospatial signal). Verification script uses World Bank 'Access to electricity (%)' (EG.ELC.ACCS.ZS), which is a national-level aggregate measure unrelated to PA boundaries.",
+    "CRITICAL: Year alignment issue. Target (PHL) is 2022; proxy (EG.ELC.ACCS.ZS) years are not specified in output, but the script merges on 'iso' only when years don't overlap, creating temporal mismatch. The data_quality_notes confirm 'Proxy year does not exactly match target year; merged on ISO code only.'",
+    "Data source not authentic. Hypothesis specifies 'VIIRS Day/Night Band Nighttime Lights' from 'Earth Observation Group (EOG)' as the data source. Script explicitly documents that 'Direct VIIRS Nighttime Lights in Protected Areas data were not available' and substituted World Bank electricity data instead. This substitution was not pre-documented in the hypothesis and represents a fundamental pivot away from the specified proxy.",
+    "Mechanistic validity compromised. The causal link between national-level electricity access and integrity of protected areas (no buildings/cropland within PA boundaries) is weak and indirect. Electricity access measures a country-level development indicator; in-PA nighttime lights would measure PA-specific human disturbance. The substitute operates at a different geographic scale.",
+    "Partial correlation not computed. Script states 'Partial r = null' in result, limiting the ability to control for confounders (e.g., GPC). This weakens the causal interpretation."
+  ],
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": null,
+    "outcome_focus": false,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 5,
+    "criteria_notes": "The substitute proxy (World Bank electricity access) has established methodology (World Bank data collection), verified results, global spatial coverage (190 countries), multi-year temporal coverage (2000+), recent data (2022), and open access. However, it fails on relevance (electricity access is not a direct measure of protected-area disturbance by light, cropland, or buildings) and outcome focus (it measures a policy/input—grid access—rather than environmental outcome in protected areas). The original VIIRS proxy would have scored higher on relevance and outcome focus but is unavailable as tabular data. The verification result uses the substitute proxy, not the hypothesis-specified one."
+  }
+}

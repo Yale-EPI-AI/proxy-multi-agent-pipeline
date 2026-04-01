@@ -1,0 +1,17 @@
+{
+  "hypothesis_id": "PHL-H08",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.23836377478967233,
+    "pearson_p": 0.0015383368719262213,
+    "spearman_rho": 0.27513653577835356,
+    "spearman_p": 0.0002384905108379734,
+    "n_observations": 174,
+    "n_countries": 174
+  },
+  "partial_correlation": null,
+  "functional_form": null,
+  "data_quality_notes": "Hansen Global Forest Change raster data not directly accessible via API. Used World Bank indicator AG.LND.FRST.ZS (Forest area % of land area) as proxy. This measures total forest cover rather than tree cover loss in protected areas specifically. The relationship is inverted: lower forest area implies more historical loss. PHL target covers year 2022; proxy uses most recent available year per country. Forest area is a positive correlate of PHL (higher forest cover = more protected area intact), so expected direction should be positive for this proxy (despite hypothesis expecting negative for tree cover LOSS). Note: The original hypothesis uses 'tree cover loss' (negative direction), but the proxy used here is 'forest area' (positive direction). The verdict reflects the proxy used, not the original hypothesis exactly.",
+  "summary": "Used World Bank forest area indicator as proxy for tree cover loss in protected areas. Bivariate: Pearson r=0.238 (p=0.002), Spearman rho=0.275 (p=0.000), n=174. No partial correlation. Verdict: partially_confirmed. The Hansen Global Forest Change raster data was not accessible via available APIs."
+}

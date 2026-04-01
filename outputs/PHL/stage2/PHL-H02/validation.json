@@ -1,0 +1,32 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": false,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that global cropland extent (measured by 30-meter Landsat satellite data) should negatively correlate with PHL—the percentage of protected areas free from cropland and buildings. The mechanism is direct: more cropland in a country should reduce the proportion of protected land that remains undisturbed. However, the proxy used in verification (World Bank arable land as % of total land area) is a fundamentally different variable that measures a country-level percentage rather than cropland extent or its overlap with protected areas.",
+  "issues": [
+    "CRITICAL: Year alignment mismatch. PHL data is 2022-only, but the script merges it against World Bank arable land from years 2021, 2020, or 2019. This creates a 1–3 year lag between proxy and target observations, violating temporal alignment. The hypothesis calls for contemporaneous cropland extent and protected-area quality measurements.",
+    "CRITICAL: Hypothesis interpretation severely compromised. The hypothesis specifies GLAD/GACED30 30-meter satellite-derived cropland extent (a direct geospatial product) masked against protected areas. The script substitutes World Bank 'Arable land (% of land area)', which is a country-level aggregate percentage—a conceptually different variable that does not measure cropland extent, does not mask against protected areas, and does not provide the 1:1 volumetric proxy claimed in the hypothesis.",
+    "CRITICAL: Data source not authentic. The specified source is GLAD/GACED30 Zenodo GeoTIFFs via Google Earth Engine. The script could not access these and instead substituted World Bank World Development Indicators without documenting this as a fundamental departure from the hypothesis specification. The data_quality_notes acknowledge the substitution but present it as acceptable; it is not.",
+    "Functional form mismatch: The hypothesis specifies a linear relationship ('linear' functional_form), but result.json shows the best fit is quadratic (AIC 602.96 vs. linear AIC 607.84). This contradicts the hypothesis claim of a direct 1:1 linear proxy.",
+    "Proxy validity: Arable land % does not account for the masking against protected areas that the hypothesis mechanism requires. A country with high arable land may have it concentrated outside protected areas, invalidating the direct negative relationship expected.",
+    "Temporal coverage: The hypothesis claims 2000–2024 coverage, but PHL is 2022-only and World Bank arable land is merged from 2019–2021. The full temporal scope cannot be tested.",
+    "Evidence-data disconnect: The script cites Potapov et al. 2022 (Nature Food) as justifying the hypothesis, but the actual test used World Bank arable land, not Potapov's satellite data. The citation supports the hypothesis concept but does not validate the World Bank substitute."
+  ],
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": true,
+    "outcome_focus": false,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": false,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 5,
+    "criteria_notes": "The World Bank arable land data (AG.LND.ARBL.ZS) is established (World Bank WDI), verified, accessible, and recent (2019–2021). However, it fails the core EPI inclusion criteria: (1) relevance — arable land % is not a direct measure of cropland extent in protected areas; (2) outcome_focus — it measures a country-level stock, not environmental outcomes related to protected-area quality; (3) temporal_completeness — only 2019–2021 data were merged, not the full 2000–2024 scope claimed. The substitution of World Bank data for GLAD/GACED30 satellite imagery fundamentally undermines hypothesis validity, as the former does not measure what the hypothesis specifies."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "no_synthetic_data": true,
+  "year_alignment_ok": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis posits that the Global Human Footprint Index (HFP)—which explicitly integrates croplands and built environments as primary weighted components—should exhibit a near-perfect inverse relationship with PHL (% of protected land with high integrity). However, the verification script substituted World Bank Agricultural Land (% of land area) as a proxy for the full HFP composite, testing only one of eight input layers. This partial proxy captures croplands but omits built environments, population density, nighttime lights, pastures, roads, railways, and navigable waterways, fundamentally weakening the causal mechanism originally proposed.",
+  "issues": [
+    "Material proxy substitution: The hypothesis specifies 'Global Human Footprint Index' (Mu et al. 2022, full composite of 8 variables), but the verification used only 'World Bank Agricultural Land' (croplands only), which is a substantially different variable. This is not a minor data availability adjustment but a conceptually different proxy.",
+    "Data source not authentic: The hypothesis explicitly names 'Multiple iterations, prominently Mu et al. (2022)' from figshare GeoTIFF as the data source. The verification script explicitly acknowledges that HFP raster data cannot be obtained as country-level aggregates via APIs, then substitutes an entirely different World Bank indicator without attempting alternative HFP data sources (e.g., direct download and spatial aggregation, alternative HFP implementations, or recent global 100m datasets).",
+    "Hypothesis interpretation problem: The causal mechanism depends on HFP's 'explicit utilization of croplands AND built environments as two of its primary weighted input layers' creating 'mathematical guarantee' of inverse alignment. Using only croplands breaks this mechanism—the stated 'near-perfect inverse theoretical alignment' is claimed to arise from the full composite, not a single component.",
+    "Acknowledged but unresolved: The script's own data_quality_notes admit 'This covers only one of eight HFP input layers' and that 'The near-perfect theoretical alignment claimed by Mu et al. 2022 refers to the full composite HFP dataset,' yet the verdict still marks the hypothesis as 'partially_confirmed' based on this weakened proxy. The correlation magnitude (Pearson r = -0.306, Spearman rho = -0.443) is moderate, not 'near-perfect,' raising questions about whether the partial proxy is adequate.",
+    "Year alignment appears sound (2022 data matched across proxy and target), and the sample size (n=174 countries) is adequate, so those aspects are not flagged. However, the fundamental proxy substitution undermines the core verification claim."
+  ],
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": true,
+    "performance_orientation": true,
+    "outcome_focus": true,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": false,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 8,
+    "criteria_notes": "The Global Human Footprint Index (Mu et al. 2022) is peer-reviewed, well-established, outcome-focused, and globally comprehensive. However, the verification used a proxy (agricultural land only) with limited temporal span in 2022, and the full HFP dataset in its native form (GeoTIFF rasters) was never actually integrated into the analysis. The inclusion score reflects the *intended* data source in the hypothesis, not the substitute used in verification. The substitute (World Bank Agricultural Land) itself meets 8/9 criteria but captures only a fraction of HFP's conceptual scope. Temporal completeness is flagged as questionable because the verification is cross-sectional (2022 only), whereas the hypothesis claims a time_period of 2000–2020."
+  }
+}

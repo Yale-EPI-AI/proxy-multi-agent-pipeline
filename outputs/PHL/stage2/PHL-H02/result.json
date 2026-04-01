@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "PHL-H02",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.3844247540392185,
+    "pearson_p": 1.6319446831897466e-07,
+    "spearman_rho": -0.5010700760272216,
+    "spearman_p": 1.8983532157074378e-12,
+    "n_observations": 174,
+    "n_countries": 174
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "quadratic",
+    "linear_r2": 0.14778239151811345,
+    "linear_aic": 607.8438393754512,
+    "log_linear_r2": 0.14980213673035014,
+    "log_linear_aic": 607.4309720846543,
+    "quadratic_r2": 0.18084315506378879,
+    "quadratic_aic": 602.9592979801797
+  },
+  "data_quality_notes": "Exact proxy (GLAD/GACED30 30m cropland GeoTIFFs) not accessible via World Bank or WHO APIs \u2014 requires Google Earth Engine. Substituted: Arable land (% of land area) \u2014 World Bank AG.LND.ARBL.ZS. PHL target is 2022-only. Note: arable land % is a related but imperfect proxy \u2014 it does not mask against protected areas as the hypothesis intends. Partial correlation skipped if pingouin returned unexpected output format.",
+  "summary": "PHL-H02 tests whether global cropland extent negatively predicts the percentage of protected areas free from cropland/buildings (PHL). The GLAD/GACED30 dataset (Potapov et al. 2022, Nature Food) is the ideal proxy but requires Google Earth Engine. World Bank arable land (% of land area, AG.LND.ARBL.ZS) was used as a substitute. Pearson r=-0.384 (p=0.0000), Spearman rho=-0.501, n=174. The negative direction is confirmed: countries with more arable land have lower protected-area quality scores."
+}

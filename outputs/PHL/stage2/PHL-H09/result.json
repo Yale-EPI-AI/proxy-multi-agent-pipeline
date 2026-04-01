@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "PHL-H09",
+  "verdict": "rejected",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": 0.07616136625355374,
+    "pearson_p": 0.31786840935366406,
+    "spearman_rho": 0.021147526979697597,
+    "spearman_p": 0.7817990134333208,
+    "n_observations": 174,
+    "n_countries": 174
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "log-linear",
+    "linear_r2": 0.0058005537096077475,
+    "linear_aic": 634.6565318020628,
+    "log_linear_r2": 0.008549796030309031,
+    "log_linear_aic": 634.1747061492686,
+    "quadratic_r2": 0.015632112658986452,
+    "quadratic_aic": 634.9272953914287
+  },
+  "data_quality_notes": "Proxy: World Bank AG.CON.FERT.ZS \u2014 fertilizer consumption (kg per hectare of arable land). This indicator directly represents the fertilizer-per-arable-land ratio hypothesized. Used most recent available year (2019\u20132022) per country matched against PHL 2022 target. Note: the proxy does not exclude protected areas from the arable land denominator, which is a limitation relative to the exact hypothesis specification (which calls for arable land outside protected areas specifically). Final merged dataset: 174 countries. Partial correlation failed due to numerical issues in pingouin library; ",
+  "summary": "Bivariate Pearson r=0.076 (p=0.318), Spearman rho=0.021 (p=0.782), n=174. Partial correlation not computed (numerical issue). Best functional form: log-linear. Verdict: rejected. The hypothesis predicts that higher fertilizer pressure per arable land is associated with greater cropland encroachment into protected areas (lower PHL score)."
+}

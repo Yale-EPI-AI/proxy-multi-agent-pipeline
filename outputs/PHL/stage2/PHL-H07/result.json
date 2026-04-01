@@ -1,0 +1,25 @@
+{
+  "hypothesis_id": "PHL-H07",
+  "verdict": "partially_confirmed",
+  "verification_method": "statistical_test",
+  "raw_correlation": {
+    "pearson_r": -0.14901245796395493,
+    "pearson_p": 0.0497145314436631,
+    "spearman_rho": -0.12651894811476025,
+    "spearman_p": 0.09619994198700262,
+    "n_observations": 174,
+    "n_countries": 174
+  },
+  "partial_correlation": null,
+  "functional_form": {
+    "best_form": "linear",
+    "linear_r2": 0.022204712628459466,
+    "linear_aic": 631.7616057212197,
+    "log_linear_r2": 0.020328524862470942,
+    "log_linear_aic": 632.0951559786281,
+    "quadratic_r2": 0.022205852906025503,
+    "quadratic_aic": 633.7614028071591
+  },
+  "data_quality_notes": "Direct VIIRS Nighttime Lights in Protected Areas data were not available through any public tabular API. The Earth Observation Group (EOG) publishes annual VIIRS composites (VNL V2), but no pre-computed country-level protected-area summary table is publicly available without custom GIS processing. Substituted World Bank indicator 'Access to electricity (%)' (EG.ELC.ACCS.ZS) as the closest available tabular proxy for human infrastructure / settlement. Note that electricity access is only loosely correlated with NTL radiance inside protected areas and does not capture the within-PA signal the hypothesis targets. Results should be interpreted with caution.",
+  "summary": "Tested whether 174 country-level observations show a negative relationship between access-to-electricity (EG.ELC.ACCS.ZS, used as substitute for VIIRS Nighttime Lights in Protected Areas) and the proportion of protected areas free from cropland/buildings (PHL). Pearson r = -0.149 (p = 0.050), Spearman rho = -0.127 (p = 0.096). Best functional form: linear. True VIIRS Nighttime Lights in Protected Areas data were unavailable; the substitute indicator is a weak proxy that operates at the national rather than within-protected-area level."
+}
