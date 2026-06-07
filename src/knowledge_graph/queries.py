@@ -62,17 +62,35 @@ def get_cross_indicator_candidates(graph: EpiKnowledgeGraph, tla: str) -> list[d
     return results
 
 
-def get_contradictions(
+def get_direction_mismatches(
     graph: EpiKnowledgeGraph,
     tla: Optional[str] = None,
     inferences: Optional[list[Inference]] = None,
 ) -> list[dict]:
-    """Get direction conflicts, optionally filtered by indicator TLA."""
+    """Get proxies where hypothesized direction disagrees with observed correlation."""
     if inferences is None:
         return []
     results = []
     for inf in inferences:
-        if inf.inference_type != "direction_conflict":
+        if inf.inference_type != "direction_mismatch":
+            continue
+        if tla and inf.details.get("indicator") != tla:
+            continue
+        results.append(inf.details)
+    return results
+
+
+def get_verdict_conflicts(
+    graph: EpiKnowledgeGraph,
+    tla: Optional[str] = None,
+    inferences: Optional[list[Inference]] = None,
+) -> list[dict]:
+    """Get same-direction proxy pairs with contradictory verdicts (confirmed vs rejected)."""
+    if inferences is None:
+        return []
+    results = []
+    for inf in inferences:
+        if inf.inference_type != "verdict_conflict":
             continue
         if tla and inf.details.get("indicator") != tla:
             continue

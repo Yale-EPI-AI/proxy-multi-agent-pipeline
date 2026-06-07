@@ -1,19 +1,35 @@
 {
-  "no_synthetic_data": true,
-  "year_alignment_ok": true,
+  "no_synthetic_data": false,
+  "year_alignment_ok": false,
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
   "country_coverage_adequate": true,
   "outlier_concerns": true,
-  "mechanistic_explanation": "The hypothesis proposes that hepatitis A (HAV) epidemiology mirrors unsafe water and sanitation coverage because HAV is transmitted via the fecal-oral route, with high-HDI countries showing older age at infection (due to WASH improvements) and low-HDI countries showing early childhood infection via contaminated water. However, the verification script used WHO GHO WHS3_41, which is a generic disease notification indicator of unspecified content, not a validated HAV incidence or seroprevalence measure.",
+  "mechanistic_explanation": "The hypothesis proposes that VIIRS nighttime light radiance (a proxy for electrification and infrastructure density) negatively predicts unsafe water DALYs: darker regions lack the electrical infrastructure needed to operate water treatment plants, pumping stations, and disinfection systems. However, the verify.py script actually tests Hepatitis A incidence (or a generic WHO GHO disease indicator WHS3_41) against UWD, which is a fundamentally different causal pathway. HAV is a waterborne disease outcome, not an infrastructure capacity measure — this confuses effect (disease burden) with cause (electrification infrastructure).",
   "issues": [
-    "CRITICAL: Proxy variable mismatch. Hypothesis specifies 'reported acute hepatitis A cases per 100,000' or 'age-standardized seroprevalence (% with anti-HAV antibodies)'. Script used WHO GHO WHS3_41, which the data_quality_notes itself flags as 'may reflect general disease notifications, not exclusively Hepatitis A; verify exact indicator definition.' This is a fundamental substitution of an unvalidated indicator for a specific epidemiological measure.",
-    "CRITICAL: Data source not authentic. Hypothesis cites CDC/WHO Notifiable Diseases Surveillance System (NDSS) at https://www.cdc.gov/diseases-conditions/hepatitis-a/. Script acknowledged this 'provides PDFs only, not machine-readable data' but then used an undocumented WHO GHO indicator (WHS3_41) instead without clear justification that WHS3_41 is from NDSS or equivalent.",
-    "MAJOR: Severe correlation-hypothesis mismatch. Expected r≈0.55–0.70; observed Pearson r=0.072 (p<0.0001). This is a ~10-fold gap. Spearman rho=0.201 is similarly far below hypothesis expectation.",
-    "MAJOR: Outlier/masking concern. With 5046 observations across 196 countries and such a weak overall correlation despite statistically significant p-values, there are likely large country-level heterogeneities or ceiling/floor effects (e.g., universal vaccination in high-HDI countries masking the HAV-WASH signal). No outlier analysis or stratification by HDI/vaccination coverage was performed.",
-    "MODERATE: Partial correlation not computed. Script attempted to aggregate to country-level means but 'partial = None' in final output. Without GDP/capita control, cannot assess whether the weak correlation is confounded by development level.",
-    "MODERATE: Functional form untested. Script attempted test_functional_form() but 'functional_form = None' in final result. Hypothesis specifies nonlinear relationship; no evidence presented that linear form is adequate.",
-    "MINOR: Year alignment appears sound (merged on iso+year, 5046 rows from 196 countries suggests reasonable temporal coverage), but given the weak correlation, temporal misalignment of proxy to target cannot be ruled out as a contributing factor."
+    "CRITICAL: Hypothesis specifies VIIRS nighttime radiance as proxy; verify.py tests WHO GHO WHS3_41 (disease notification indicator) instead. These are materially different variables — radiance is infrastructure/electrification; WHS3_41 is a disease outcome.",
+    "CRITICAL: Data source mismatch — hypothesis clearly states 'NOAA VIIRS Day/Night Band Monthly V1' with coverage '208 countries, 2015-2024'; result.json shows 'gee:noaa_viirs_dnb_monthly_v1_vcmslcfg_avg_rad_mean' in summary but actual proxy data fetched from WHO GHO, not VIIRS.",
+    "CRITICAL: Proxy direction reversed — hypothesis expects negative correlation (high radiance → low UWD; more infrastructure → safer water); result shows Pearson r=-0.233 and Spearman rho=-0.691, but bivariate correlation uses WHO disease data, not radiance. The negative sign is meaningless without the correct proxy.",
+    "MAJOR: Partial correlation (r=0.020, p=0.47) is negligible and non-significant after controlling for log(GDP). This suggests the entire signal came from GDP, not from the proxy itself — yet the hypothesis mechanism claims electrification is the causal driver. The result contradicts the proposed mechanism.",
+    "MAJOR: Functional form test shows quadratic as best fit (R²=0.118), contradicting hypothesis's claimed log-linear relationship. No log-linear R² reported (null), suggesting it was never tested or failed.",
+    "MAJOR: Year alignment may be problematic — proxy coverage stated as '2015-2024', but result.json indicates '1372 observations across 196 countries' from a merged dataset. If target spans 1990-2021 and proxy is 2015-2024, only 2015-2021 overlap; this narrow temporal window is not flagged.",
+    "MODERATE: Outlier concerns evident — the huge gap between Pearson r (-0.23) and Spearman rho (-0.69) suggests extreme nonlinearity or outlier-driven correlations. Hypothesis acknowledges this but verify.py does not explicitly handle outliers (e.g., no IQR capping, no sensitivity analysis).",
+    "MODERATE: Data quality notes acknowledge 'attempted to acquire Hepatitis A incidence data' but then settled on WHS3_41 without validation that WHS3_41 actually measures Hepatitis A (could be generic disease notification). No documentation of what WHS3_41 actually is.",
+    "MINOR: Hypothesis confidence is 'speculative', but result claims 'partially_confirmed' based on DB statistical test. This upgrade from speculative to partially_confirmed is not justified given the mismatch between intended and actual proxy."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": null,
+    "outcome_focus": false,
+    "documented_methodology": true,
+    "verified_results": false,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "signal_independence": false,
+    "criteria_met": 4,
+    "criteria_notes": "The actual proxy used (WHO GHO WHS3_41, a disease notification indicator) fails relevance (measures disease outcome, not infrastructure capacity) and outcome_focus (captures surveillance reporting, not environmental outcome). VIIRS radiance itself has good documentation (satellite product with published algorithms) and open access, but it was never tested. The partial correlation collapsed to r=0.020 (p=0.47) controlling for GDP, indicating no independent signal — criterion 10 (signal_independence) fails. Spatial completeness (196 countries) and temporal completeness (1372 observations) are adequate, and recency is satisfied (includes 2015-2024 data, open access from NOAA/GEE). The core problem: the hypothesis and verification do not match."
+  }
 }

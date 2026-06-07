@@ -46,6 +46,7 @@ def apply_inclusion_gate(
     annotation: ValidationAnnotation,
     current_verdict: Verdict,
     binding_mode: str | None = None,
+    target_tla: str | None = None,
 ) -> tuple[Verdict, list[str]]:
     """Apply inclusion criteria gating to adjust the verdict.
 
@@ -53,6 +54,9 @@ def apply_inclusion_gate(
         annotation: The validation annotation (must have inclusion_score).
         current_verdict: The verdict from statistical verification.
         binding_mode: Override for INCLUSION_BINDING_MODE.
+        target_tla: Indicator TLA. Used to escalate signal_independence from
+            advisory to yellow-flag warning for indicators in
+            domain_knowledge.GDP_IMPUTATION_DEPENDENT.
 
     Returns:
         (adjusted_verdict, gate_notes) — verdict may be unchanged.
@@ -60,10 +64,33 @@ def apply_inclusion_gate(
     mode = binding_mode or INCLUSION_BINDING_MODE
     gate_notes: list[str] = []
 
-    if mode == "advisory" or annotation.inclusion_score is None:
+    if annotation.inclusion_score is None:
         return current_verdict, gate_notes
 
     score = annotation.inclusion_score
+
+    # Per-indicator escalation: for indicators whose EPI imputation model is
+    # f(GDP, region), a proxy failing signal_independence is essentially
+    # re-deriving the imputation. Surface as a yellow-flag warning (even in
+    # advisory mode) — NOT a verdict downgrade, just prominent in the output.
+    if target_tla:
+        try:
+            from src.domain_knowledge import is_gdp_imputation_dependent
+            if (
+                is_gdp_imputation_dependent(target_tla)
+                and score.signal_independence is False
+            ):
+                gate_notes.append(
+                    f"signal_independence warning ({target_tla} is GDP-imputation-"
+                    "dependent): the proxy's correlation is explained by GDP per "
+                    "capita, re-deriving the imputation rather than adding "
+                    "independent information. Not a rejection — review mechanism."
+                )
+        except Exception as exc:  # pragma: no cover — defensive import
+            logger.debug("GDP-imputation check failed: %s", exc)
+
+    if mode == "advisory":
+        return current_verdict, gate_notes
 
     # Hard gate: reject if any critical criterion is explicitly False
     if mode == "hard_gate":
@@ -156,9 +183,13 @@ async def validate_result(
     )
     logger.info("Saved validation to %s", validation_path)
 
-    # Apply inclusion criteria gating
+    # Apply inclusion criteria gating (passes TLA so GDP-imputation-dependent
+    # indicators can surface signal_independence as a yellow-flag warning).
     adjusted_verdict, gate_notes = apply_inclusion_gate(
-        annotation, verification_result.verdict, inclusion_binding_mode
+        annotation,
+        verification_result.verdict,
+        inclusion_binding_mode,
+        target_tla=hypothesis.target_variable,
     )
     if gate_notes:
         annotation.issues.extend(gate_notes)

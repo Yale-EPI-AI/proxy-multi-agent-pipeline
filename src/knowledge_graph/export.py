@@ -104,14 +104,25 @@ def to_summary_report(
                 lines.append(f"- ... and {len(cross) - 20} more")
             lines.append("")
 
-        conflicts = [i for i in inferences if i.inference_type == "direction_conflict"]
-        if conflicts:
-            lines.append(f"### Direction Conflicts ({len(conflicts)})\n")
-            for inf in conflicts:
+        mismatches = [i for i in inferences if i.inference_type == "direction_mismatch"]
+        if mismatches:
+            lines.append(f"### Direction-Observation Mismatches ({len(mismatches)})\n")
+            for inf in mismatches:
                 d = inf.details
                 lines.append(
-                    f"- **{d.get('indicator', '')}**: {d.get('proxy1', '')} ({d.get('direction1', '')}) "
-                    f"vs {d.get('proxy2', '')} ({d.get('direction2', '')})"
+                    f"- **{d.get('indicator', '')}**: {d.get('proxy', '')} — "
+                    f"hypothesized {d.get('hypothesized_direction', '')} but observed r={d.get('observed_r', 0):.3f}"
+                )
+            lines.append("")
+
+        vconflicts = [i for i in inferences if i.inference_type == "verdict_conflict"]
+        if vconflicts:
+            lines.append(f"### Same-Direction Verdict Conflicts ({len(vconflicts)})\n")
+            for inf in vconflicts:
+                d = inf.details
+                lines.append(
+                    f"- **{d.get('indicator', '')}**: {d.get('proxy1', '')} vs {d.get('proxy2', '')} "
+                    f"(both {d.get('direction', '')}, but conflicting verdicts)"
                 )
             lines.append("")
 

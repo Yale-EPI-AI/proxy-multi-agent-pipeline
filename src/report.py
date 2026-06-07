@@ -407,12 +407,13 @@ def _build_detail_panel(
                 ("relevance", "Relevance"),
                 ("performance_orientation", "Performance Orientation"),
                 ("outcome_focus", "Outcome Focus"),
-                ("established_methodology", "Established Methodology"),
+                ("documented_methodology", "Documented Methodology"),
                 ("verified_results", "Verified Results"),
                 ("spatial_completeness", "Spatial Completeness"),
                 ("temporal_completeness", "Temporal Completeness"),
                 ("recency", "Recency"),
                 ("open_access", "Open Access"),
+                ("signal_independence", "Signal Independence"),
             ]
             ic_chips = []
             for field_name, label in criteria_names:
@@ -427,7 +428,7 @@ def _build_detail_panel(
                         f'border:1px solid #8a8a8a30">N/A {_escape(label)}</span>'
                     )
 
-            met_str = f"{ic.criteria_met}/9" if ic.criteria_met is not None else "—"
+            met_str = f"{ic.criteria_met}/10" if ic.criteria_met is not None else "—"
             sections.append(
                 f'<h4>EPI Inclusion Criteria {s2val} — {met_str}</h4>'
                 f'<div class="flag-chips">{"".join(ic_chips)}</div>'
@@ -505,13 +506,13 @@ def _build_row(
     incl_html = "—"
     if vr.validation and vr.validation.inclusion_score and vr.validation.inclusion_score.criteria_met is not None:
         met = vr.validation.inclusion_score.criteria_met
-        if met >= 7:
+        if met >= 8:
             incl_color = "#2e7d32"
-        elif met >= 5:
+        elif met >= 6:
             incl_color = "#bf6900"
         else:
             incl_color = "#c62828"
-        incl_html = f'<span style="color:{incl_color};font-weight:600">{met}/9</span>'
+        incl_html = f'<span style="color:{incl_color};font-weight:600">{met}/10</span>'
 
     summary_tr = (
         f'<tr class="summary-row" data-id="{row_id}">'

@@ -20,7 +20,6 @@ pip install gradio
 
 # Set API keys
 export ANTHROPIC_API_KEY=...
-export GEMINI_API_KEY=...
 
 # Launch web UI
 python web/app.py
@@ -32,16 +31,20 @@ python -m src -i WRR
 
 ## Architecture
 
-1. **Stage 1 — Deep Research Agent**: Gemini Deep Research + Claude structured
-   extraction generates proxy hypotheses for a given EPI indicator.
-2. **Stage 2 — Code Agent**: Claude Code SDK agent downloads data, runs statistical
-   tests (correlation, partial correlation, functional form), and outputs verified
-   results.
+1. **Stage 1 — Discovery Agent**: Claude Sonnet 4.6 with ~30 data-source tools
+   (World Bank, WHO GHO, NASA POWER, Wikipedia, UN Comtrade, OpenAQ, Google Earth
+   Engine, GDELT) searches, previews, fetches, and pre-correlates candidate proxies
+   into a centralized DuckDB, then emits structured hypotheses.
+2. **Stage 2 — Verification**: for hypotheses whose data was fetched during
+   discovery, a deterministic statistics pipeline (`run_full_verification`) computes
+   bivariate + partial correlations, functional form, and verdict directly from the
+   DB. Literature-attested and manual-data hypotheses fall back to a Claude Code
+   SDK agent that writes a `verify.py` and runs it.
 
 ## Deployment (Hugging Face Spaces)
 
 1. Create a Space at `huggingface.co/new-space` with **Docker** SDK.
-2. Add secrets in Space settings: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`.
+2. Add secrets in Space settings: `ANTHROPIC_API_KEY`.
 3. Push:
    ```bash
    git remote add hf https://huggingface.co/spaces/<user>/epi-proxy-discovery

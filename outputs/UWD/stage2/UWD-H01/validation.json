@@ -4,16 +4,30 @@
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
   "country_coverage_adequate": true,
-  "outlier_concerns": true,
-  "mechanistic_explanation": "Poor water and sanitation infrastructure enable fecal-oral contamination pathways, leading to increased diarrheal disease incidence. Countries with unsafe water access should show elevated diarrhea notification rates, establishing a positive relationship between water safety deficits and gastrointestinal disease burden.",
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Population without access to improved drinking water sources is exposed to fecal-oral pathogens (Vibrio cholerae, Cryptosporidium, E. coli), leading to waterborne diarrheal disease, typhoid, and hepatitis A. Higher basic water access rates directly reduce pathogen ingestion, thereby lowering UWD (Unsafe Water Deaths/DALYs). The near-monotonic negative relationship (Spearman rho = -0.88) reflects this near-direct causal link.",
   "issues": [
-    "CRITICAL: Proxy variable substitution — hypothesis specifies 'Diarrheal disease notification rates' but actual proxy used is 'SH.DYN.MORT' (Under-5 mortality rate), a fundamentally different variable. Under-5 mortality has many causes (malaria, pneumonia, malnutrition, etc.) beyond diarrheal disease.",
-    "CRITICAL: Data source mismatch — hypothesis specifies WHO GHO as source; script fell back to World Bank after WHO GHO API calls failed. Substitution is documented in data_quality_notes but represents a materially different source with different methodology.",
-    "CRITICAL: Extraordinarily high correlation (r=0.911, rho=0.947) with p≈0.0 across 6,176 observations from 193 countries is implausibly strong for an indirect proxy. Under-5 mortality is confounded by multiple competing causes; a near-perfect correlation suggests the proxy is measuring something different from the hypothesis mechanism.",
-    "MAJOR: Functional form mismatch — hypothesis predicts log-linear relationship; script found quadratic (R²=0.8316 vs 0.5665 for log-linear), suggesting the mechanism is not log-linear as claimed.",
-    "MAJOR: Partial correlation not computed (null in result) — GPC (GDP per capita) control could not be run, leaving economic confounding unaddressed. This is critical because Under-5 mortality is strongly driven by national wealth, as is water access.",
-    "CONCERN: Outlier influence likely — with near-perfect correlation across 193 countries, the relationship may be driven by a few countries with extreme values rather than the causal mechanism described in the hypothesis.",
-    "DATA QUALITY: Script documents data_quality_notes that proxy is 'related WASH/water-disease metric' but actual proxy (Under-5 mortality) is not specifically a water-disease metric — it conflates diarrhea with other leading causes of child death."
+    "CRITICAL: The hypothesis specifies proxy_variable='Basic drinking water services access (% of population)' from World Bank/WHO-UNICEF JMP (SH.H2O.BASW.ZS). However, result.json reports testing 'wb:SH.H2O.BASW.ZS vs epi:UWD' but the verify.py script shows a fallback path that attempted to fetch diarrheal disease incidence from WHO GHO (DIARRHOEA_INCIDENCE, WHS3_48, etc.) and WASH-related World Bank indicators (SH.STA.WASH.P5, SH.H2O.SMDW.ZS, SH.STA.BASS.ZS, SH.STA.ODFC.ZS) as substitutes. The script does not show an explicit fetch of SH.H2O.BASW.ZS itself.",
+    "CRITICAL: The hypothesis expects a negative correlation (direction='negative') between water access and UWD, with expected r≈-0.81 and rho≈-0.88. The result.json reports pearson_r=-0.814 and spearman_rho=-0.883, which match the hypothesis perfectly. This near-perfect match raises concerns that the result may be reverse-engineered or the proxy variable was changed mid-execution but reported as the original.",
+    "MAJOR: The verify.py script shows multiple fallback attempts (WHO GHO codes, alternative World Bank indicators) that would have fetched fundamentally different proxy variables (diarrheal incidence, deaths from unsafe water, open defecation rates, sanitation access) rather than the specified 'basic drinking water services access.' The actual data source used to generate result.json is unclear.",
+    "MAJOR: The hypothesis acknowledges a critical caveat: 'This is mechanistically so close to UWD that it risks circularity — IHME may use JMP access data as a covariate in GBD models.' If the actual UWD target was derived using JMP water access data as a covariate, then the proxy and target are not independent, and the correlation is inflated/circular.",
+    "The agent's verify.py script attempts to fetch WHO GHO diarrheal disease data and World Bank WASH metrics as proxies, but result.json claims to have tested 'wb:SH.H2O.BASW.ZS' without clear evidence in the script that this indicator was actually fetched. The data_quality_notes in result.json says 'Proxy coverage: 207 countries, 2000-2024' which matches the hypothesis's stated coverage, but the script logic does not show a direct fetch of SH.H2O.BASW.ZS.",
+    "The functional_form result reports 'quadratic' as best form with R²=0.663, but the hypothesis specifies 'log-linear' functional form. The script's test_functional_form output does not decisively favor log-linear over linear (linear R²=0.6627 vs log_linear R²=0.6462), yet result.json was generated with a claimed correlation matching the hypothesis's stated strength.",
+    "High statistical power (n=4196, 194 countries) is reported, but the script shows conditional fallback logic that may have executed a 'literature_accepted' pathway instead of 'db_statistical_test', yet result.json claims 'verification_method': 'db_statistical_test'."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": true,
+    "performance_orientation": true,
+    "outcome_focus": true,
+    "documented_methodology": true,
+    "verified_results": null,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "signal_independence": true,
+    "criteria_met": 9,
+    "criteria_notes": "The proxy (basic drinking water access from World Bank/WHO-UNICEF JMP) is well-documented, internationally recognized, covers 207 countries and 25 years (2000–2024), and is freely available. It directly addresses water-related disease exposure (high relevance and outcome focus). Performance orientation is strong: countries with higher access systematically show lower unsafe water DALYs. However, 'verified_results' is marked null because the circularity caveat (IHME may use JMP data as a covariate in GBD) raises questions about independence of proxy and target. Signal independence appears marginal but passes the advisory threshold: partial r = -0.756 (p<0.001) controlling for GDP/capita, suggesting the water access signal is not entirely confounded by development. However, the mechanism is so proximal to the outcome that mediation by GDP is plausible and expected."
+  }
 }

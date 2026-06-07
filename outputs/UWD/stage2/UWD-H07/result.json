@@ -1,25 +1,31 @@
 {
   "hypothesis_id": "UWD-H07",
-  "verdict": "confirmed",
-  "verification_method": "statistical_test",
+  "verdict": "partially_confirmed",
+  "verification_method": "db_statistical_test",
   "raw_correlation": {
-    "pearson_r": 0.9136089144853874,
-    "pearson_p": 1.17333855947201e-72,
-    "spearman_rho": 0.8425604799710698,
-    "spearman_p": 1.604718768964363e-50,
-    "n_observations": 183,
-    "n_countries": 183
+    "pearson_r": -0.23848971565416194,
+    "pearson_p": 1.6214523786032245e-16,
+    "spearman_rho": -0.08439668777995085,
+    "spearman_p": 0.003958529435214419,
+    "n_observations": 1164,
+    "n_countries": 194
   },
-  "partial_correlation": null,
+  "partial_correlation": {
+    "partial_r": -0.2492972950122544,
+    "partial_p": 1.692640241450404e-17,
+    "control_variables": [
+      "epi:GPC"
+    ]
+  },
   "functional_form": {
     "best_form": "quadratic",
-    "linear_r2": 0.834681248627168,
-    "linear_aic": 2208.934938418035,
-    "log_linear_r2": 0.5832066495362924,
-    "log_linear_aic": 2378.157801663966,
-    "quadratic_r2": 0.8388966049240167,
-    "quadratic_aic": 2206.2082181458177
+    "linear_r2": 0.056877344472802904,
+    "linear_aic": 16143.302694157437,
+    "log_linear_r2": null,
+    "log_linear_aic": null,
+    "quadratic_r2": 0.059627655159316006,
+    "quadratic_aic": 16141.903307470637
   },
-  "data_quality_notes": "Used WB SH.STA.WASH.P5 (mortality rate attributed to unsafe water, unsafe sanitation and lack of hygiene, per 100,000 population) as proxy for child diarrheal mortality. This is a closely related indicator from WHO/WB. Original hypothesis cited IHME cause-specific child mortality database (not available via API).",
-  "summary": "WASH-attributable mortality proxy vs UWD DALYs: Pearson r=0.914 (p=1.173e-72), Spearman rho=0.843. Partial correlation not computed. Best functional form: quadratic. Hypothesis claimed r\u22480.72 for diarrheal mortality vs WASH (Victora et al. 2012, Lancet)."
+  "data_quality_notes": "Proxy coverage: 206 countries, 2015-2020. Target coverage: 198 countries, 1990-2021. Aligned observations: 1164.",
+  "summary": "DB-verified: gee:modis_006_mod44b_percent_tree_cover_mean vs epi:UWD, verdict=partially_confirmed"
 }

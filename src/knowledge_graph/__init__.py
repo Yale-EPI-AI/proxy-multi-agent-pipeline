@@ -6,7 +6,8 @@ from .visualize import generate_html
 from .graph import EpiKnowledgeGraph
 from .queries import (
     get_confounder_warnings,
-    get_contradictions,
+    get_direction_mismatches,
+    get_verdict_conflicts,
     get_coverage_gaps,
     get_cross_indicator_candidates,
     get_graph_stats,
@@ -46,7 +47,8 @@ __all__ = [
     # Queries
     "get_proxies_for_indicator",
     "get_cross_indicator_candidates",
-    "get_contradictions",
+    "get_direction_mismatches",
+    "get_verdict_conflicts",
     "get_confounder_warnings",
     "get_coverage_gaps",
     "get_indicator_coverage_summary",

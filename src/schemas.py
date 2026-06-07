@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class Direction(str, Enum):
@@ -53,9 +53,16 @@ class Accessibility(str, Enum):
 
 
 class MethodologyStatus(str, Enum):
+    # Traditional provenance
     peer_reviewed = "peer_reviewed"
     international_org = "international_org"
     government_official = "government_official"
+    # Novel provenance — documented-but-not-traditionally-published sources
+    satellite_derived = "satellite_derived"    # e.g. MODIS/Landsat/Sentinel products
+    sensor_network = "sensor_network"          # e.g. OpenAQ air quality stations
+    digital_behavioral = "digital_behavioral"  # e.g. Wikipedia pageviews, GDELT themes
+    trade_statistics = "trade_statistics"      # e.g. UN Comtrade
+    # Uncurated / unclear
     grey_literature = "grey_literature"
     unknown = "unknown"
 
@@ -116,6 +123,7 @@ class ProxyHypothesis(BaseModel):
     literature_evidence: Optional[str] = Field(default=None, description="Reported statistic + citation when evidence_type is literature_attested")
     caveats: list[str] = Field(default_factory=list)
     references: list[str] = Field(default_factory=list)
+    db_variable_id: Optional[str] = Field(default=None, description="Variable ID in the DB if data was fetched during discovery")
 
 
 # ── Stage 1 Output ─────────────────────────────────────────────────────────────
@@ -133,13 +141,27 @@ class InclusionCriteriaScore(BaseModel):
     relevance: Optional[bool] = None
     performance_orientation: Optional[bool] = None
     outcome_focus: Optional[bool] = None
-    established_methodology: Optional[bool] = None
+    # Renamed from `established_methodology` to broaden acceptance to
+    # documented-but-non-traditional sources (satellite products, sensor
+    # networks, digital traces). Reads old JSON via the alias below so
+    # previously cached pipeline_result.json files still deserialize.
+    documented_methodology: Optional[bool] = Field(
+        default=None,
+        validation_alias=AliasChoices("documented_methodology", "established_methodology"),
+    )
     verified_results: Optional[bool] = None
     spatial_completeness: Optional[bool] = None
     temporal_completeness: Optional[bool] = None
     recency: Optional[bool] = None
     open_access: Optional[bool] = None
-    criteria_met: Optional[int] = Field(default=None, description="Count of True values (0-9)")
+    # Advisory-only: partial correlation controlling for GDP/pop/urb remains
+    # significant. Does NOT gate the verdict — confounding by development
+    # aggregates is expected for many valid proxies with mechanistic support.
+    # For indicators listed in domain_knowledge.GDP_IMPUTATION_DEPENDENT,
+    # failing this criterion is surfaced as a yellow-flag warning in the
+    # dashboard (still not a rejection).
+    signal_independence: Optional[bool] = None
+    criteria_met: Optional[int] = Field(default=None, description="Count of True values (0-10)")
     criteria_notes: str = ""
 
 

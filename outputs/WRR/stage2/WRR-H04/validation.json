@@ -1,17 +1,33 @@
 {
   "no_synthetic_data": false,
-  "year_alignment_ok": true,
-  "hypothesis_interpretation_ok": true,
+  "year_alignment_ok": false,
+  "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
   "country_coverage_adequate": true,
-  "outlier_concerns": false,
-  "mechanistic_explanation": "EPR legislation creates financial incentives for producers to design recyclable packaging and fund collection/sorting infrastructure. These structural changes in the waste management system, combined with regulatory enforcement, should increase the proportion of waste recovered rather than landfilled. The mechanism is plausible and supported by the Italy case study cited in the hypothesis.",
+  "outlier_concerns": true,
+  "mechanistic_explanation": "The hypothesis proposes that cereal yield (agricultural modernization proxy) correlates positively with waste recovery rate through institutional capacity transfer: high-yield agriculture generates crop residues and demonstrates logistics/storage infrastructure that scales to municipal waste systems. However, the verification script tested EPR maturity (years since extended producer responsibility legislation) instead of cereal yield, fundamentally misaligning the proxy variable tested from the hypothesis specification.",
   "issues": [
-    "Critical: EPR implementation dates were manually compiled from literature/government sources rather than fetched from the PSI database or another machine-readable authenticated source. The script hardcodes ~80 country-year pairs as 'verifiable dates from official government records,' but this is a manual dataset construction, not data retrieval. While the dates may be accurate, this is a form of semi-synthetic data assembly that circumvents the original data source specification.",
-    "The PSI database (epr.sustainablepackaging.org) is cited as the primary source in the hypothesis but was not actually used; the data_quality_notes acknowledge it is 'not machine-readable.' Instead, a substitute dataset was constructed. Although documented in data_quality_notes, this is a material deviation from the specified data source.",
-    "Partial correlation controlling for confounders (e.g., GDP per capita) was not computed, even though the hypothesis explicitly cites 'Confounding with other waste legislation' and 'Confounding with other waste legislation' as caveats. The script attempted to load GPC but the null result suggests the merge failed or had insufficient observations; this limitation should have been investigated further.",
-    "The functional form analysis shows a quadratic fit (R²=0.571) performs better than linear (R²=0.515), but the hypothesis specifies a 'threshold' functional form. A quadratic relationship does not match the claimed threshold mechanism, suggesting either the mechanism description is inaccurate or the data does not support the stated functional form.",
-    "Implementation delays (1-3 years) and enforcement variability noted in caveats are not modeled in the proxy. EPR maturity is measured as years since legislation, but enforcement lags and heterogeneous design are not captured."
+    "CRITICAL: Hypothesis specifies 'Cereal yield (kg per hectare)' from World Bank AG.YLD.CREL.KG, but verify.py constructed and tested 'EPR maturity' (years since EPR legislation implementation) instead. These are conceptually distinct proxies with different mechanisms.",
+    "CRITICAL: EPR implementation dates appear manually compiled from government/academic sources, not fetched from the World Bank API endpoint specified in the hypothesis. The script explicitly states 'EPR design heterogeneity not captured' and 'dates manually compiled from verified sources,' contradicting the data_source specification.",
+    "CRITICAL: result.json reports testing 'wb:AG.YLD.CREL.KG vs epi:WRR' but the verify.py script never loads or uses cereal yield data—it constructs an epr_implementation_data dictionary of 89 countries with legislation dates. This is a severe mismatch between claimed and actual proxy.",
+    "Year alignment concern: The hypothesis specifies time_period '1990-2024', but EPR legislation dates are single implementation years per country (point-in-time), not annual time series. The script calculates 'years_since_epr' to create pseudo-temporal variation, but this conflates country-level temporal progression with structural change, potentially violating proper panel alignment.",
+    "Synthetic/constructed data: EPR dates are hand-coded in verify.py (not fetched from API), violating the 'fetch real data' principle. While sources are cited as verifiable, the data is not programmatically retrieved from the specified source.",
+    "Outlier concerns: High Spearman ρ=0.531 vs Pearson r=0.298 suggests nonlinearity or outlier influence. Partial correlation controlling for log(GDP) drops to r=-0.061 (not significant), indicating the raw correlation is driven primarily by GDP confounding, not the EPR proxy itself.",
+    "The result.json functional form test shows quadratic is best (R²=0.306), not the log-linear form specified in the hypothesis. This contradicts the hypothesis's assumed functional_form.",
+    "No discussion of the mechanistic shift: the hypothesis describes cereal yield→institutional capacity→waste management, but the verify.py script tests EPR legislation→waste recovery, which is a different causal pathway entirely."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": true,
+    "outcome_focus": true,
+    "established_methodology": null,
+    "verified_results": false,
+    "spatial_completeness": true,
+    "temporal_completeness": false,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 4,
+    "criteria_notes": "The proxy actually tested (EPR maturity) is not the proxy specified in the hypothesis (cereal yield), making relevance assessment problematic. EPR legislation dates are not a methodologically established, peer-reviewed measure of waste recovery potential. Temporal completeness is weak: EPR dates are single years, not time series—the script artificially creates temporal variation via 'years_since_epr.' Spatial completeness is adequate (122 countries in merged analysis). Performance orientation and outcome focus are present (EPR is a policy lever, WRR is an outcome). The constructed EPR dataset is not from an international standards body and appears to have been manually compiled without algorithmic/automated retrieval, raising verification and reproducibility concerns."
+  }
 }

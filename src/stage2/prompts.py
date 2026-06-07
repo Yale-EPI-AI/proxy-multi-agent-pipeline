@@ -516,20 +516,42 @@ is implausible, say so.
 
 ## EPI Inclusion Criteria Assessment
 
-In addition to the 6-point checklist, assess the proxy data source against the EPI's 9 inclusion
-criteria. For each criterion, set true (met), false (not met), or null (cannot determine):
+In addition to the 6-point checklist, assess the proxy data source against the EPI's 10
+inclusion criteria. For each criterion, set true (met), false (not met), or null (cannot
+determine):
 
 1. **relevance**: Data measures something directly related to the target environmental issue
 2. **performance_orientation**: Data can distinguish better-performing from worse-performing countries
 3. **outcome_focus**: Data reflects actual environmental outcomes (not just policies or inputs)
-4. **established_methodology**: Data follows a peer-reviewed, international org, or government-official methodology
-5. **verified_results**: Data has been validated or cross-checked by independent parties
-6. **spatial_completeness**: Data covers at least 80 countries (check the merged dataset size and hypothesis metadata)
-7. **temporal_completeness**: Data includes at least 3 time points/years
-8. **recency**: Data includes observations from 2018 or later
-9. **open_access**: Data is freely available without paid subscriptions
+4. **documented_methodology**: The data source has a DOCUMENTED, reproducible methodology. This
+   is broader than "peer-reviewed" — it accepts any of the following if the extraction/measurement
+   method is transparent and reproducible:
+     - peer-reviewed academic papers
+     - international organizations (UN, WHO, World Bank, OECD)
+     - government statistics offices
+     - satellite products with published algorithms (MODIS, Sentinel, Landsat)
+     - sensor networks with documented station protocols (OpenAQ, GEMStat)
+     - digital-behavioral traces with published aggregation methods
+       (Wikipedia pageviews, GDELT themes)
+     - trade statistics (UN Comtrade, national customs)
+   Set false ONLY if methodology is grey-literature or genuinely unknown. Novel non-traditional
+   sources should PASS this criterion as long as the methodology is documented somewhere public.
+5. **verified_results**: Data has been validated or cross-checked against an independent source
+   (can be informal — e.g., satellite product calibrated against station data).
+6. **spatial_completeness**: Data covers at least 80 countries (check the merged dataset size).
+7. **temporal_completeness**: Data includes at least 3 time points/years.
+8. **recency**: Data includes observations from 2018 or later.
+9. **open_access**: Data is freely available without paid subscriptions.
+10. **signal_independence** (ADVISORY): Does the proxy add information beyond the known
+    development confounders (GDP per capita, urbanization, population)? Set true if the
+    partial correlation from the verification output remains significant (p < 0.10) after
+    controlling for GDP. Set false if partial correlation is non-significant or the whole
+    signal can be explained by GDP. This criterion is advisory only — a proxy failing it is
+    NOT rejected, because (a) mediation by GDP is consistent with the mechanism doing its
+    job, (b) the hypothesis's `mechanism` field is where causal specificity is judged. Still
+    record it honestly — future meta-analysis depends on it.
 
-Count the number of criteria that are explicitly true (not null) in `criteria_met`.
+Count the number of criteria that are explicitly true (not null) in `criteria_met` (max 10).
 Provide a brief rationale in `criteria_notes` explaining key strengths or gaps.
 
 ## Output Format
@@ -549,13 +571,14 @@ Return a single JSON object (NO markdown fences, NO commentary outside the JSON)
     "relevance": true/false/null,
     "performance_orientation": true/false/null,
     "outcome_focus": true/false/null,
-    "established_methodology": true/false/null,
+    "documented_methodology": true/false/null,
     "verified_results": true/false/null,
     "spatial_completeness": true/false/null,
     "temporal_completeness": true/false/null,
     "recency": true/false/null,
     "open_access": true/false/null,
-    "criteria_met": 0-9,
+    "signal_independence": true/false/null,
+    "criteria_met": 0-10,
     "criteria_notes": "brief rationale"
   }
 }

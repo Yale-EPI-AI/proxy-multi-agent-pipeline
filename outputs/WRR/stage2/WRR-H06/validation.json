@@ -5,15 +5,26 @@
   "data_source_authentic": false,
   "country_coverage_adequate": true,
   "outlier_concerns": false,
-  "mechanistic_explanation": "The hypothesis proposes that countries with high recycled material trade flows (as a proportion of total material consumption) demonstrate advanced waste collection, sorting, and processing infrastructure, thereby indicating higher waste recovery rates. The actual proxy tested—'Manufactures exports as % of merchandise exports'—is conceptually unrelated: it measures the composition of a country's export basket, not recycling capacity or waste material trade. While both wealthy/industrial countries may trade more manufactures AND have better recycling, the causal chain is broken.",
+  "mechanistic_explanation": "The hypothesis predicts that energy-efficient economies (low energy intensity) have closed-loop industrial systems that minimize waste and recover recyclable material streams, with decarbonization policies further incentivizing waste-to-energy recovery. However, the verification script tests against World Bank energy intensity (wb:EG.EGY.PRIM.PP.KD), which directly measures the hypothesized proxy variable rather than the originally specified proxy (recycled material trade flows from UN Comtrade). This conflates the proxy with a confounding mechanism variable.",
   "issues": [
-    "CRITICAL: Data source substitution without equivalent proxy. The hypothesis specifies UN Comtrade recycled material trade flow data (metals, paper, plastics, glass as % of total material consumption). The script uses WB:TX.VAL.MANF.ZS.UN (Manufactures exports % of merchandise exports), which is a fundamentally different variable. Manufactures exports do not measure recycled material trade.",
-    "CRITICAL: Hypothesis interpretation mismatch. The hypothesis targets a specific waste-recovery proxy (recycled material trade as proportion of consumption). The proxy used measures industrial export composition, which is conceptually distinct. This is not a reasonable substitution but a category error.",
-    "The data_quality_notes acknowledge this substitution but frame it as 'unavailable without auth' rather than flagging that the test does not actually verify the stated hypothesis.",
-    "Confounding acknowledged in notes: wealthier countries both export more manufactures AND have higher recycling rates, making it impossible to isolate the causal effect of recycling infrastructure from wealth effects.",
-    "Partial correlation computation failed ('p-val' error), preventing control for GDP/capita—the primary confounder.",
-    "Functional form test also failed (format string error), so the hypothesis's claim of 'log-linear' form cannot be evaluated.",
-    "The verdict 'partially_confirmed' is based on a correlation (r=0.49) between a proxy that does not measure recycled material trade and the target, inflating confidence in a hypothesis that was never actually tested."
+    "CRITICAL: Hypothesis specifies 'Recycled Material Trade Flows' (UN Comtrade) as the proxy variable, but the verification script tests 'Energy intensity of primary energy' (wb:EG.EGY.PRIM.PP.KD), which is a completely different variable. The script's data_quality_notes acknowledge UN Comtrade was unavailable, but does not document that the substitute is conceptually distinct from the hypothesis specification.",
+    "CRITICAL: The hypothesis mechanism explicitly describes why low energy intensity predicts high WRR (closed-loop systems, advanced manufacturing, waste-to-energy policies). The proxy variable in the hypothesis IS energy intensity. The verification appears to test the hypothesis mechanism directly rather than the specified proxy hypothesis. This is a fundamental category error — the script is testing the causal mechanism, not validating the proxy.",
+    "The hypothesis specifies proxy source as 'World Bank / IEA' and db_variable_id 'wb:EG.EGY.PRIM.PP.KD', but the data_source.name field states 'Energy intensity level of primary energy' — confirming this is the energy intensity variable, NOT recycled material trade flows. The hypothesis itself was written to test energy intensity, not recycled material trade flows as originally described in proxy_variable.",
+    "The data_quality_notes state 'Using WB substitute indicator which is an imperfect proxy' for recycled material trade flows, but this is misleading: energy intensity is not a proxy for recycled material trade flows — it is a distinct variable with its own mechanism.",
+    "Weak mechanistic justification for the direction: the hypothesis claims low energy intensity → more waste recovery, but energy intensity is partly driven by industrial structure and climate, not purely by recycling capacity. The negative correlation (r=-0.203, p<0.001) is statistically significant but very weak (R²≈0.04), suggesting energy intensity is a poor explanatory variable for WRR."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": true,
+    "outcome_focus": true,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 7,
+    "criteria_notes": "Energy intensity data from World Bank/IEA meets most EPI criteria: it is established (IEA methodology), verified (WB aggregates), complete (134 countries, 431 observations), recent (2000-2022), and open-access. However, it fails RELEVANCE: energy intensity is not directly related to recycled material trade flows or waste recovery rates. The hypothesis conflates mechanism (low energy intensity correlates with WRR) with proxy validation (does recycled material trade flow correlate with WRR). A valid proxy must measure the construct it claims to measure. Energy intensity measures industrial energy efficiency, not recycling infrastructure or trade flows."
+  }
 }

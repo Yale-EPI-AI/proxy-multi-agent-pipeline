@@ -38,14 +38,31 @@ cross_candidate(P, B, "same_category", 600) :-
 has_proxy_for(P, I) :- proxy(P, I, _, _).
 
 % ══════════════════════════════════════════════════════════════════
-% Rule 2: Directional consistency check
-% Flag when two non-rejected proxies for the same indicator disagree on direction
+% Rule 2a: Direction-observation mismatch
+% Flag when a proxy's hypothesized direction disagrees with its
+% observed correlation sign — the proposed mechanism was wrong.
+% (positive hypothesis but negative observed r, or vice versa)
 % ══════════════════════════════════════════════════════════════════
-direction_conflict(I, P1, P2, D1, D2) :-
-    proxy(P1, I, D1, V1), proxy(P2, I, D2, V2),
-    P1 < P2, D1 != D2,
-    V1 != "rejected", V2 != "rejected",
-    V1 != "inconclusive", V2 != "inconclusive".
+direction_mismatch(P, I, D, R) :-
+    proxy(P, I, D, V), correlation(P, R),
+    V != "rejected", V != "inconclusive",
+    D = "positive", R < -50.
+direction_mismatch(P, I, D, R) :-
+    proxy(P, I, D, V), correlation(P, R),
+    V != "rejected", V != "inconclusive",
+    D = "negative", R > 50.
+
+% ══════════════════════════════════════════════════════════════════
+% Rule 2b: Same-direction verdict conflict
+% Two proxies claim the same direction for the same indicator, but
+% one is confirmed and the other rejected — contradictory evidence.
+% ══════════════════════════════════════════════════════════════════
+verdict_conflict(I, P1, P2, D) :-
+    proxy(P1, I, D, "confirmed"), proxy(P2, I, D, "rejected"),
+    P1 != P2.
+verdict_conflict(I, P1, P2, D) :-
+    proxy(P1, I, D, "partially_confirmed"), proxy(P2, I, D, "rejected"),
+    P1 != P2.
 
 % ══════════════════════════════════════════════════════════════════
 % Rule 3: Confounder path detection
@@ -76,7 +93,8 @@ source_used_for(S, I) :- source(P, S), proxy(P, I, _, _).
 
 % Show directives
 #show cross_candidate/4.
-#show direction_conflict/5.
+#show direction_mismatch/4.
+#show verdict_conflict/4.
 #show confounder_warning/1.
 #show coverage_gap/1.
 #show shared_source_candidate/2.
@@ -208,20 +226,37 @@ class ReasoningEngine:
                 details={"reason": reason},
             )
 
-        elif name == "direction_conflict":
+        elif name == "direction_mismatch":
+            proxy_id = args[0].string
+            indicator = args[1].string
+            direction = args[2].string
+            observed_r = args[3].number / 1000
+            return Inference(
+                inference_type="direction_mismatch",
+                source=f"proxy:{proxy_id}",
+                target=f"indicator:{indicator}",
+                details={
+                    "proxy": proxy_id,
+                    "indicator": indicator,
+                    "hypothesized_direction": direction,
+                    "observed_r": observed_r,
+                },
+            )
+
+        elif name == "verdict_conflict":
             indicator = args[0].string
             p1 = args[1].string
             p2 = args[2].string
-            d1 = args[3].string
-            d2 = args[4].string
+            direction = args[3].string
             return Inference(
-                inference_type="direction_conflict",
+                inference_type="verdict_conflict",
                 source=f"proxy:{p1}",
                 target=f"proxy:{p2}",
                 details={
                     "indicator": indicator,
-                    "proxy1": p1, "direction1": d1,
-                    "proxy2": p2, "direction2": d2,
+                    "proxy1": p1,
+                    "proxy2": p2,
+                    "direction": direction,
                 },
             )
 

@@ -3,14 +3,29 @@
   "year_alignment_ok": true,
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
-  "country_coverage_adequate": true,
+  "country_coverage_adequate": false,
   "outlier_concerns": false,
-  "mechanistic_explanation": "The hypothesis proposes that countries with developed e-waste recycling infrastructure (requiring technical sophistication) will show higher waste recovery rates overall. However, the verification script substituted renewable electricity output (% of total generation) as the proxy, which measures energy transition maturity rather than waste management capability. While both may correlate with development level, renewable energy penetration is conceptually distinct from e-waste recycling infrastructure and breaks the intended causal chain.",
+  "mechanistic_explanation": "The hypothesis proposes that countries exporting higher shares of manufactured goods face stronger ISO standards, environmental auditing, and supply-chain pressures from multinational buyers, which create industrial waste management systems that reduce waste generation and increase recovery rates, thereby improving WRR. However, the verification script did not test this specific proxy (Manufactured exports share % of merchandise exports from World Bank indicator TX.VAL.MANF.ZS.UN). Instead, it attempted to find e-waste recycling rate data and, when unsuccessful, reported 'inconclusive' with zero observations, failing to test the hypothesis as specified.",
   "issues": [
-    "MAJOR: Proxy variable substitution — hypothesis specifies 'e-waste recycling rate' but script uses 'renewable electricity as % of total' (World Bank EG.ELC.RNEW.ZS). These are materially different variables. Renewable energy output reflects energy policy and resource endowment, not waste management infrastructure.",
-    "MAJOR: Data source not authentic — the hypothesis explicitly requires 'Global E-waste Monitor 2024' (ITU/UNITAR). The script could not access this source and substituted World Bank renewable electricity data without adequate justification. The data_quality_notes acknowledge this substitution but do not explain why renewable electricity is a valid proxy for e-waste recycling.",
-    "MODERATE: Weak mechanistic link — the claimed mechanism ('countries with advanced renewable energy infrastructure tend to also have developed waste management systems') is plausible but indirect. The script provides no evidence that renewable energy infrastructure causally relates to e-waste recycling capacity. This is a confounding-by-development inference, not a direct proxy.",
-    "MINOR: Partial correlation not computed — although 423 observations and 132 countries are available, partial correlation controlling for GDP was skipped. This would help isolate the proxy effect from general development level, which is critical given the development-driven confounding."
+    "CRITICAL: Hypothesis specifies 'Manufactured exports share (% of merchandise exports)' from World Bank TX.VAL.MANF.ZS.UN, but the script never attempted to fetch this indicator. Instead, it searched for 'e-waste recycling rate' data, which is a different proxy variable entirely.",
+    "The script's comment 'E-waste recycling rate (Global E-waste Monitor / ITU)' in the hypothesis does NOT match the actual proxy variable stated in the hypothesis JSON ('Manufactured exports share'). This is a fundamental mismatch.",
+    "The verified result shows 0 observations and 0 countries with a null correlation, indicating the proxy data was never successfully retrieved or merged.",
+    "Data source authenticity failed: The hypothesis clearly specifies World Bank TX.VAL.MANF.ZS.UN (Manufactures exports % of merchandise exports), but the script attempted to acquire Global E-waste Monitor data instead, which is not the source specified.",
+    "Country coverage is zero due to failed data retrieval—cannot assess adequacy.",
+    "The script documents that it tried alternative WB indicators (renewable electricity, sanitation access, etc.) but never tried the primary indicator specified in the hypothesis (TX.VAL.MANF.ZS.UN)."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": null,
+    "performance_orientation": null,
+    "outcome_focus": null,
+    "established_methodology": true,
+    "verified_results": null,
+    "spatial_completeness": null,
+    "temporal_completeness": null,
+    "recency": null,
+    "open_access": true,
+    "criteria_met": 2,
+    "criteria_notes": "The World Bank data source (TX.VAL.MANF.ZS.UN) has established international methodology and is open access, but the verification script never retrieved it, so relevance, performance orientation, outcome focus, verified results, spatial and temporal completeness, and recency cannot be assessed. The fundamental failure is that the wrong proxy variable was pursued entirely."
+  }
 }

@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agentic Environmental Data Proxy Discovery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yale-blue: #00356B;
+    --yale-blue-dark: #002347;
+    --yale-blue-light: #2b5f9e;
+    --yale-blue-faint: rgba(0, 53, 107, 0.06);
+    --epi-green: #2e7d32;
+    --epi-green-light: #4caf50;
+    --amber: #bf6900;
+    --amber-bright: #e08a1f;
+    --border: #d4d2cb;
+    --border-strong: #a8a59b;
+    --text-primary: #1f1f1f;
+    --text-secondary: #4a4a4a;
+    --text-muted: #7a7a7a;
+    --bg: #ffffff;
+    --bg-soft: #f6f4ef;
+    --bg-panel: #fafaf7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 4097px;
+    height: 2304px;
+    background: var(--bg);
+    font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  .poster {
+    position: relative;
+    width: 4097px;
+    height: 2304px;
+    padding: 0;
+  }
+
+  /* NOTE: 1 CSS px = 0.72pt at this slide size; 28pt minimum = 40px floor. */
+
+  /* ───────────────── HEADER ───────────────── */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 46px 80px 36px 80px;
+    background: var(--yale-blue);
+    color: #fff;
+    height: 260px;
+  }
+  .header .title-block { padding-right: 40px; }
+  .header h1 {
+    font-size: 100px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.0;
+    margin: 0 0 14px 0;
+  }
+  .header .subtitle {
+    font-size: 42px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.85);
+    font-style: italic;
+    font-family: 'Source Serif 4', serif;
+    line-height: 1.1;
+  }
+  .header .meta-block {
+    text-align: right;
+    line-height: 1.3;
+    color: rgba(255,255,255,0.95);
+  }
+  .header .meta-block .author {
+    font-size: 48px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .header .meta-block .affil {
+    font-size: 40px;
+    color: rgba(255,255,255,0.85);
+  }
+  .header .meta-block .event {
+    margin-top: 10px;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #ffd166;
+  }
+
+  /* ───────────────── BODY GRID ───────────────── */
+  .body {
+    display: grid;
+    grid-template-columns: 1130px 1700px 1130px;
+    grid-template-rows: 1170px 700px;
+    gap: 28px;
+    padding: 26px 40px 24px 40px;
+    height: 1960px;
+  }
+
+  .panel {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 34px 38px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel.dark {
+    background: var(--yale-blue);
+    color: #fff;
+    border-color: var(--yale-blue);
+  }
+  .panel.soft {
+    background: var(--bg-soft);
+  }
+  .panel .label {
+    display: block;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--yale-blue);
+    margin-bottom: 10px;
+  }
+  .panel.dark .label { color: #ffd166; }
+
+  h2 {
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--yale-blue);
+    letter-spacing: -0.01em;
+    line-height: 1.04;
+    margin-bottom: 14px;
+  }
+  .panel.dark h2 { color: #fff; }
+  h2 .accent { color: var(--epi-green); }
+
+  p, li {
+    font-size: 40px;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+  .panel.dark p, .panel.dark li { color: rgba(255,255,255,0.95); }
+
+  p + p { margin-top: 16px; }
+
+  ul.bullets {
+    list-style: none;
+    padding: 0;
+    margin-top: 12px;
+  }
+  ul.bullets li {
+    position: relative;
+    padding-left: 38px;
+    margin-bottom: 10px;
+    font-size: 40px;
+    line-height: 1.28;
+  }
+  ul.bullets li::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 22px;
+    width: 16px;
+    height: 16px;
+    background: var(--epi-green);
+    border-radius: 50%;
+  }
+  .panel.dark ul.bullets li::before { background: #ffd166; }
+
+  /* ───────────────── GRID AREAS ───────────────── */
+  .area-problem { grid-column: 1; grid-row: 1; }
+  .area-method  { grid-column: 2; grid-row: 1; }
+  .area-kg      { grid-column: 3; grid-row: 1 / span 2; padding: 28px 28px 20px 28px; }
+  .area-tools   { grid-column: 1; grid-row: 2; }
+  .area-results { grid-column: 2; grid-row: 2; }
+
+  /* ───────────────── PIPELINE DIAGRAM (single-row) ───────────────── */
+  .pipeline-wrap {
+    margin-top: 14px;
+  }
+  .pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .desc-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .pipe-block {
+    border: 3px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 10px 14px;
+    background: var(--bg);
+    text-align: center;
+  }
+  .pipe-block .pb-title {
+    font-weight: 700;
+    font-size: 40px;
+    color: var(--text-primary);
+    line-height: 1.05;
+  }
+  .pipe-block .pb-sub {
+    font-size: 40px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    font-weight: 500;
+    line-height: 1.12;
+  }
+  .pipe-input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .pipe-input-group .pipe-block { padding: 10px 14px; }
+  .pipe-plus {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-muted);
+    line-height: 1;
+  }
+  .arrow-h {
+    font-size: 50px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1;
+    text-align: center;
+  }
+  .arrow-v {
+    font-size: 54px;
+    color: var(--text-muted);
+    line-height: 0.8;
+    text-align: center;
+  }
+  .pipe-stage {
+    border: 3px dashed;
+    border-radius: 16px;
+    padding: 10px 12px 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+  }
+  .pipe-stage.s1 { border-color: var(--yale-blue-light); background: rgba(0, 53, 107, 0.035); }
+  .pipe-stage.s2 { border-color: var(--epi-green); background: rgba(46, 125, 50, 0.05); }
+  .pipe-stage-label {
+    display: block;
+    text-align: center;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 8px;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pipe-stage-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+  .pipe-stage.s1 .pipe-stage-label { color: var(--yale-blue); }
+  .pipe-stage.s2 .pipe-stage-label { color: var(--epi-green); }
+  .pipe-stage.s1 .pipe-block { border-color: var(--yale-blue-light); background: var(--yale-blue-faint); }
+  .pipe-stage.s1 .pipe-block .pb-title { color: var(--yale-blue); }
+  .pipe-stage.s2 .pipe-block { border-color: var(--epi-green); background: rgba(46, 125, 50, 0.08); }
+  .pipe-stage.s2 .pipe-block .pb-title { color: var(--epi-green); }
+  .pipe-report {
+    border: 3px solid var(--amber);
+    background: rgba(191, 105, 0, 0.08);
+  }
+  .pipe-report .pb-title { color: var(--amber); }
+
+  /* ───── pipeline description cards ───── */
+  .pd-card {
+    border: 2px solid var(--border);
+    border-top: 6px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    background: var(--bg);
+  }
+  .pd-card .pd-head {
+    font-weight: 700;
+    font-size: 40px;
+    margin-bottom: 6px;
+    line-height: 1.08;
+  }
+  .pd-card.s1 { border-top-color: var(--yale-blue); }
+  .pd-card.s1 .pd-head { color: var(--yale-blue); }
+  .pd-card.s2 { border-top-color: var(--epi-green); }
+  .pd-card.s2 .pd-head { color: var(--epi-green); }
+  .pd-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .pd-list li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 40px;
+    line-height: 1.24;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .pd-list li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 22px;
+    width: 10px;
+    height: 10px;
+    background: currentColor;
+    opacity: 0.5;
+    border-radius: 50%;
+  }
+  .pd-list li code {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--yale-blue);
+    font-size: inherit;
+  }
+
+  /* ───────────────── AGENT TOOLING ───────────────── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 14px;
+  }
+  .tool-card {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    background: var(--bg);
+  }
+  .tool-card .tc-head {
+    font-weight: 700;
+    color: var(--yale-blue);
+    font-size: 42px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .tool-card .tc-head .count {
+    color: var(--epi-green);
+    font-size: 56px;
+    font-weight: 800;
+  }
+  .tool-card .tc-body {
+    font-size: 40px;
+    color: var(--text-secondary);
+    line-height: 1.22;
+  }
+  .tool-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .tool-chip {
+    background: var(--yale-blue-faint);
+    border: 2px solid var(--yale-blue-light);
+    color: var(--yale-blue);
+    border-radius: 999px;
+    padding: 4px 16px;
+    font-size: 40px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ───────────────── RESULTS ───────────────── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-top: 10px;
+    margin-bottom: 18px;
+  }
+  .kpi {
+    text-align: center;
+    padding: 14px 10px;
+    background: var(--yale-blue-faint);
+    border-radius: 14px;
+    border: 2px solid var(--yale-blue-light);
+  }
+  .kpi .n {
+    font-size: 90px;
+    font-weight: 800;
+    color: var(--epi-green);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .kpi .lbl {
+    font-size: 40px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-top: 6px;
+    line-height: 1.15;
+  }
+  table.results-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+  }
+  table.results-tbl th {
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 40px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  table.results-tbl td {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 40px;
+    line-height: 1.15;
+  }
+  table.results-tbl td.tla {
+    font-weight: 700;
+    color: var(--yale-blue);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  table.results-tbl td.r {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--epi-green);
+  }
+  table.results-tbl td.r.neg { color: var(--amber); }
+
+  /* ───────────────── KNOWLEDGE GRAPH (right col) ───────────────── */
+  .area-kg h2 { margin-left: 12px; }
+  .kg-wrap {
+    margin-top: 16px;
+    text-align: center;
+  }
+  .kg-wrap img.kg {
+    width: 100%;
+    height: 980px;
+    object-fit: contain;
+    object-position: center top;
+    border-radius: 14px;
+    background: var(--bg);
+  }
+  .kg-wrap .kg-cap {
+    font-size: 40px;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    padding: 0 8px;
+    line-height: 1.22;
+    text-align: left;
+  }
+  .kg-wrap .kg-cap strong { color: var(--yale-blue); }
+  .report-wrap {
+    margin-top: 18px;
+    border-top: 2px solid var(--border);
+    padding-top: 16px;
+  }
+  .report-wrap .rw-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .report-wrap .rw-title {
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--yale-blue);
+  }
+  .report-wrap .rw-tag {
+    font-size: 40px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .report-wrap img.report {
+    width: 100%;
+    height: 480px;
+    object-fit: cover;
+    object-position: center top;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+  }
+  .report-wrap .rw-cap {
+    font-size: 40px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    line-height: 1.22;
+  }
+
+  /* ───────────────── FOOTER ───────────────── */
+  .footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 84px;
+    background: var(--yale-blue-dark);
+    color: rgba(255,255,255,0.9);
+    padding: 0 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 40px;
+  }
+  .footer .refs {
+    color: rgba(255,255,255,0.8);
+    font-style: italic;
+    font-family: 'Source Serif 4', serif;
+  }
+  .footer .contact { font-weight: 600; }
+  .footer .contact .sep { color: rgba(255,255,255,0.4); margin: 0 18px; }
+
+  /* ───────────────── CALLOUT BOX ───────────────── */
+  .callout {
+    background: var(--yale-blue-faint);
+    border: 2px solid rgba(0, 53, 107, 0.25);
+    border-left: 10px solid var(--yale-blue);
+    border-radius: 10px;
+    padding: 20px 24px 18px 26px;
+    margin-top: 22px;
+  }
+  .callout.amber {
+    background: rgba(191, 105, 0, 0.06);
+    border-color: rgba(191, 105, 0, 0.25);
+    border-left-color: var(--amber);
+  }
+  .callout.green {
+    background: rgba(46, 125, 50, 0.05);
+    border-color: rgba(46, 125, 50, 0.25);
+    border-left-color: var(--epi-green);
+  }
+  .callout .co-tag {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--yale-blue);
+    margin-bottom: 10px;
+  }
+  .callout.amber .co-tag { color: var(--amber); }
+  .callout.green .co-tag { color: var(--epi-green); }
+  .callout .co-title {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--yale-blue);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .callout.amber .co-title { color: var(--amber); }
+  .callout.green .co-title { color: var(--epi-green); }
+  .callout ul.co-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .callout ul.co-list li {
+    font-size: 40px;
+    line-height: 1.22;
+    margin-bottom: 8px;
+    padding-left: 0;
+    color: var(--text-primary);
+  }
+  .callout ul.co-list li::before { display: none; }
+  .callout ul.co-list li strong {
+    color: var(--yale-blue);
+    font-weight: 700;
+  }
+  .callout.amber ul.co-list li strong { color: var(--amber); }
+  .callout.green ul.co-list li strong { color: var(--epi-green); }
+
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title-block">
+      <h1>Agentic Environmental Data Proxy Discovery</h1>
+      <div class="subtitle">A multi-agent pipeline that proposes, verifies, and catalogs alternative data sources for the Yale Environmental Performance Index</div>
+    </div>
+    <div class="meta-block">
+      <div class="author">Sam Kouteili</div>
+      <div class="affil">ROSE Lab × EPI · Yale University</div>
+      <div class="event">AI at Yale · 2026</div>
+    </div>
+  </div>
+
+  <!-- BODY GRID -->
+  <div class="body">
+
+    <!-- ▣ PROBLEM -->
+    <div class="panel area-problem">
+      <div class="label">The Problem</div>
+      <h2>EPI indicators are <span class="accent">sparse &amp; imputed</span></h2>
+      <p>180 countries scored across 58 environmental indicators &mdash; but many rely on <strong>modeled, not measured,</strong> data.</p>
+      <ul class="bullets">
+        <li><strong>Waste &amp; recycling</strong> &mdash; 56 countries imputed (R&sup2;&thinsp;=&thinsp;0.42 vs GDP)</li>
+        <li><strong>Wastewater</strong> &mdash; single-year snapshots, sparse coverage</li>
+        <li><strong>Pesticide risk</strong> &mdash; only 2015 &amp; 2018 globally</li>
+      </ul>
+
+      <div class="callout amber">
+        <div class="co-tag">Parallel &middot; COVID-19</div>
+        <ul class="co-list">
+          <li><strong>Need:</strong> Official case counts under-reported &mdash; testing gaps, asymptomatic spread.</li>
+          <li><strong>Mechanism:</strong> Infected people shed SARS-CoV-2 RNA in stool; sewage concentration tracks prevalence.</li>
+          <li><strong>Ramifications:</strong> Wastewater signal forecast surges ~7&nbsp;days ahead, independent of testing.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ▣ METHOD -->
+    <div class="panel area-method">
+      <div class="label">Method</div>
+      <h2>Multi-Agent <span class="accent">Proxy Discovery</span> Pipeline</h2>
+      <p><em>Stage&nbsp;1</em> drafts proxy hypotheses from the literature; <em>Stage&nbsp;2</em> verifies each with live data.</p>
+
+      <div class="pipeline-wrap">
+        <div class="pipeline">
+          <div class="pipe-input-group">
+            <div class="pipe-block">
+              <div class="pb-title">EPI Indicator</div>
+            </div>
+            <div class="pipe-plus">+</div>
+            <div class="pipe-block">
+              <div class="pb-title">Domain</div>
+            </div>
+          </div>
+
+          <div class="arrow-h">&rarr;</div>
+
+          <div class="pipe-stage-wrap">
+            <span class="pipe-stage-label" style="color: var(--yale-blue);">Stage 1</span>
+            <div class="pipe-stage s1">
+              <div class="pipe-block"><div class="pb-title">Research</div></div>
+              <div class="arrow-h" style="font-size: 40px;">&rarr;</div>
+              <div class="pipe-block"><div class="pb-title">Extraction</div></div>
+            </div>
+          </div>
+
+          <div class="arrow-h">&rarr;</div>
+
+          <div class="pipe-stage-wrap">
+            <span class="pipe-stage-label" style="color: var(--epi-green);">Stage 2</span>
+            <div class="pipe-stage s2">
+              <div class="pipe-block"><div class="pb-title">Explore</div></div>
+              <div class="arrow-h" style="font-size: 40px;">&rarr;</div>
+              <div class="pipe-block"><div class="pb-title">Validate</div></div>
+            </div>
+          </div>
+
+          <div class="arrow-h">&rarr;</div>
+
+          <div class="pipe-block pipe-report">
+            <div class="pb-title">Report</div>
+          </div>
+        </div>
+
+        <div class="desc-row">
+          <div class="pd-card s1">
+            <div class="pd-head">Research</div>
+            <ul class="pd-list">
+              <li>Gemini Deep Research</li>
+              <li>Literature + causal map</li>
+            </ul>
+          </div>
+          <div class="pd-card s1">
+            <div class="pd-head">Extraction</div>
+            <ul class="pd-list">
+              <li>Claude parser</li>
+              <li>Pydantic schema</li>
+            </ul>
+          </div>
+          <div class="pd-card s2">
+            <div class="pd-head">Explore</div>
+            <ul class="pd-list">
+              <li>Claude Code SDK</li>
+              <li>Pearson, partial, AIC</li>
+            </ul>
+          </div>
+          <div class="pd-card s2">
+            <div class="pd-head">Validate</div>
+            <ul class="pd-list">
+              <li>10 inclusion criteria</li>
+              <li>Gates coverage &amp; access</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout green">
+        <div class="co-tag">Step 3 &middot; Knowledge Graph Compilation</div>
+        <ul class="co-list">
+          <li><strong>Compile:</strong> verified edges merge into one cross-indicator graph.</li>
+          <li><strong>Transitivity:</strong> <em>A&nbsp;&harr;&nbsp;B</em> and <em>B&nbsp;&harr;&nbsp;C</em> surfaces <em>A&nbsp;&harr;&nbsp;C</em> as a candidate.</li>
+          <li><strong>Self-consistency:</strong> contradictory edge signs flag data issues.</li>
+          <li><strong>Hub discovery:</strong> shared proxies link indicators (e.g., water access &rarr; UWD, PHL, SPI).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ▣ KNOWLEDGE GRAPH + REPORT (right col, spans 2 rows) -->
+    <div class="panel area-kg soft">
+      <div class="label">Artifacts</div>
+      <h2>Knowledge graph of verified proxies</h2>
+      <div class="kg-wrap">
+        <img src="kg_large.png" class="kg" alt="Knowledge graph">
+        <div class="kg-cap"><strong>Fig&nbsp;1.</strong> Cross-indicator graph (NetworkX + clingo ASP). Nodes are indicators and proxies; edges encode validated correlations.</div>
+      </div>
+      <div class="report-wrap">
+        <div class="rw-head">
+          <div class="rw-title">Sample output &mdash; UWD dashboard</div>
+          <div class="rw-tag">auto-generated</div>
+        </div>
+        <img src="dashboard_UWD.png" class="report" alt="UWD dashboard">
+        <div class="rw-cap"><strong>Fig&nbsp;2.</strong> Per-indicator dashboard from Stage&nbsp;2: hypothesis verdicts, scatter plots, partial correlations.</div>
+      </div>
+    </div>
+
+    <!-- ▣ AGENT TOOLING -->
+    <div class="panel area-tools soft">
+      <div class="label">Agent Tooling</div>
+      <h2><span class="accent">Data fetch</span> &amp; stats tools</h2>
+
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tc-head"><span class="count">30</span> <span>Discovery</span></div>
+          <div class="tc-body">9 open data sources.</div>
+          <div class="tool-strip">
+            <span class="tool-chip">World Bank</span>
+            <span class="tool-chip">WHO</span>
+            <span class="tool-chip">Comtrade</span>
+            <span class="tool-chip">NASA</span>
+            <span class="tool-chip">OpenAQ</span>
+            <span class="tool-chip">GEE</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <div class="tc-head"><span class="count">1</span> <span>Stats Pkg</span></div>
+          <div class="tc-body">Verification utilities.</div>
+          <div class="tool-strip">
+            <span class="tool-chip">Pearson</span>
+            <span class="tool-chip">Partial corr</span>
+            <span class="tool-chip">AIC fit</span>
+            <span class="tool-chip">Verdicts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ▣ RESULTS -->
+    <div class="panel area-results">
+      <div class="label">Results</div>
+      <h2>5 indicators &middot; <span class="accent">48 hypotheses</span></h2>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="n">48</div>
+          <div class="lbl">Hypotheses</div>
+        </div>
+        <div class="kpi">
+          <div class="n">41</div>
+          <div class="lbl">Confirmed / partial</div>
+        </div>
+        <div class="kpi">
+          <div class="n">85%</div>
+          <div class="lbl">Inclusion rate</div>
+        </div>
+      </div>
+      <table class="results-tbl">
+        <thead>
+          <tr>
+            <th>Indicator</th>
+            <th>Strongest proxy</th>
+            <th style="text-align:right;">r</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tla">UWD</td>
+            <td>Basic water access</td>
+            <td class="r neg" style="text-align:right;">&minus;0.81</td>
+          </tr>
+          <tr>
+            <td class="tla">UWD</td>
+            <td>Open defecation rate</td>
+            <td class="r" style="text-align:right;">+0.72</td>
+          </tr>
+          <tr>
+            <td class="tla">SPI</td>
+            <td>Wastewater per capita</td>
+            <td class="r" style="text-align:right;">+0.60</td>
+          </tr>
+          <tr>
+            <td class="tla">OEB</td>
+            <td>Obesity prevalence</td>
+            <td class="r neg" style="text-align:right;">&minus;0.50</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="refs">Block et&nbsp;al. &middot; <em>EPI 2024 Technical Appendix</em>, Yale CELP</div>
+    <div class="contact">
+      <span>samkouteili@gmail.com</span>
+      <span class="sep">·</span>
+      <span>github.com/SamKouteili</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

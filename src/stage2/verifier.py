@@ -210,6 +210,76 @@ async def verify_hypothesis(
         )
 
 
+async def verify_hypothesis_from_db(
+    hypothesis: ProxyHypothesis,
+    tla: str,
+    output_dir: Path | None = None,
+) -> VerificationResult:
+    """Verify a hypothesis using pre-fetched data in the centralized DB.
+
+    Much faster than the script-generation path — runs the full stats battery
+    (bivariate, partial correlation, functional form) directly from DB data.
+    Used when the discovery agent has already fetched proxy data into the DB.
+    """
+    from src.utils.db import get_connection
+    from src.utils.db_stats import run_full_verification
+    from src.schemas import CorrelationResult, FunctionalFormResult, PartialCorrelationResult
+
+    if output_dir is None:
+        output_dir = OUTPUTS_DIR / tla / "stage2" / hypothesis.id
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    conn = get_connection()
+    proxy_variable_id = hypothesis.db_variable_id
+    target_variable_id = f"epi:{tla}"
+    expected_direction = hypothesis.relationship.direction.value
+
+    logger.info(
+        "DB-verifying %s: %s vs %s", hypothesis.id, proxy_variable_id, target_variable_id,
+    )
+
+    try:
+        result_dict = run_full_verification(
+            conn,
+            proxy_variable_id,
+            target_variable_id,
+            expected_direction,
+            hypothesis_id=hypothesis.id,
+        )
+    except Exception as exc:
+        logger.warning("DB verification failed for %s: %s", hypothesis.id, exc)
+        return VerificationResult(
+            hypothesis_id=hypothesis.id,
+            verdict=Verdict.inconclusive,
+            verification_method=VerificationMethod.statistical_test,
+            data_quality_notes=f"DB verification error: {exc}",
+            summary=f"DB verification failed: {exc}",
+        )
+
+    # Save result.json
+    result_path = output_dir / "result.json"
+    result_path.write_text(
+        __import__("json").dumps(result_dict, indent=2, default=str),
+        encoding="utf-8",
+    )
+
+    # Parse into VerificationResult
+    raw_corr = result_dict.get("raw_correlation")
+    partial_corr = result_dict.get("partial_correlation")
+    func_form = result_dict.get("functional_form")
+
+    return VerificationResult(
+        hypothesis_id=hypothesis.id,
+        verdict=Verdict(result_dict.get("verdict", "inconclusive")),
+        verification_method=VerificationMethod.statistical_test,
+        raw_correlation=CorrelationResult(**raw_corr) if raw_corr else None,
+        partial_correlation=PartialCorrelationResult(**partial_corr) if partial_corr else None,
+        functional_form=FunctionalFormResult(**func_form) if func_form else None,
+        data_quality_notes=result_dict.get("data_quality_notes", ""),
+        summary=result_dict.get("summary", ""),
+    )
+
+
 def _fixup_result_json(raw: dict, hypothesis_id: str) -> dict:
     """Apply common fixups to agent-produced result.json before parsing."""
     # Strip "Verdict." prefix from verdict values (e.g. "Verdict.confirmed" -> "confirmed")

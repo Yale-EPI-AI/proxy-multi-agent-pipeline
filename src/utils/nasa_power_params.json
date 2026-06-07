@@ -1,0 +1,836 @@
+[
+  {
+    "parameter": "AIRMASS",
+    "name": "Air Mass",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_KT",
+    "name": "All Sky Insolation Clearness Index",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_NKT",
+    "name": "All Sky Normalized Insolation Clearness Index",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_LW_DWN",
+    "name": "All Sky Surface Longwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_LW_UP",
+    "name": "All Sky Surface Longwave Upward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_PAR_DIFF",
+    "name": "All Sky Surface Diffuse PAR",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_PAR_DIRH",
+    "name": "All Sky Surface Direct Horizontal PAR",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_PAR_TOT",
+    "name": "All Sky Surface Total PAR",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_SW_DIFF",
+    "name": "All Sky Surface Shortwave Diffuse Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_SW_DIRH",
+    "name": "All Sky Surface Shortwave Direct Horizontal Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_SW_DNI",
+    "name": "All Sky Surface Shortwave Downward Direct Normal Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_SW_DWN",
+    "name": "All Sky Surface Shortwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_SW_UP",
+    "name": "All Sky Surface Shortwave Upward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_UVA",
+    "name": "All Sky Surface UVA Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_UVB",
+    "name": "All Sky Surface UVB Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SFC_UV_INDEX",
+    "name": "All Sky Surface UV Index",
+    "units": "W m-2 x 40",
+    "communities": []
+  },
+  {
+    "parameter": "ALLSKY_SRF_ALB",
+    "name": "All Sky Surface Albedo",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "AOD_55",
+    "name": "Aerosol Optical Depth 55",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "AOD_55_ADJ",
+    "name": "Adjusted Aerosol Optical Depth 55",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "AOD_84",
+    "name": "Aerosol Optical Depth 84",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "CDD0",
+    "name": "Cooling Degree Days Above 0 C",
+    "units": "degree-day-c",
+    "communities": []
+  },
+  {
+    "parameter": "CDD10",
+    "name": "Cooling Degree Days Above 10 C",
+    "units": "degree-day-c",
+    "communities": []
+  },
+  {
+    "parameter": "CDD18_3",
+    "name": "Cooling Degree Days Above 18.3 C",
+    "units": "degree-day-c",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_AMT",
+    "name": "Cloud Amount",
+    "units": "%",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_AMT_DAY",
+    "name": "Cloud Amount at Daytime",
+    "units": "%",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_AMT_NIGHT",
+    "name": "Cloud Amount at Nighttime",
+    "units": "%",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_BT",
+    "name": "Cloud Bottom Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_BT_MAX",
+    "name": "Maximum Cloud Bottom Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_BT_MIN",
+    "name": "Minimum Cloud Bottom Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_OD",
+    "name": "Cloud Optical Visible Depth",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_TT",
+    "name": "Cloud Top Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_TT_MAX",
+    "name": "Maximum Cloud Top Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "CLOUD_TT_MIN",
+    "name": "Minimum Cloud Top Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_DAYS",
+    "name": "Clear Sky Days",
+    "units": "Days",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_KT",
+    "name": "Clear Sky Insolation Clearness Index",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_NKT",
+    "name": "Clear Sky Normalized Insolation Clearness Index",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_LW_DWN",
+    "name": "Clear Sky Surface Longwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_LW_UP",
+    "name": "Clear Sky Surface Longwave Upward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_PAR_DIFF",
+    "name": "Clear Sky Surface Diffuse PAR",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_PAR_DIRH",
+    "name": "Clear Sky Surface Direct Horizontal PAR",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_PAR_TOT",
+    "name": "Clear Sky Surface Total PAR",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_SW_DIFF",
+    "name": "Clear Sky Surface Shortwave Downward Diffuse Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_SW_DIRH",
+    "name": "Clear Sky Surface Shortwave Direct Horizontal Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_SW_DNI",
+    "name": "Clear Sky Surface Shortwave Downward Direct Normal Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_SW_DWN",
+    "name": "Clear Sky Surface Shortwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SFC_SW_UP",
+    "name": "Clear Sky Surface Shortwave Upward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "CLRSKY_SRF_ALB",
+    "name": "Clear Sky Surface Albedo",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "DISPH",
+    "name": "Zero Plane Displacement Height",
+    "units": "m",
+    "communities": []
+  },
+  {
+    "parameter": "EVLAND",
+    "name": "Evaporation Land",
+    "units": "mm/day",
+    "communities": []
+  },
+  {
+    "parameter": "EVPTRNS",
+    "name": "Evapotranspiration Energy Flux",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "FROST_DAYS",
+    "name": "Frost Days",
+    "units": "Days",
+    "communities": []
+  },
+  {
+    "parameter": "FRSEAICE",
+    "name": "Ice Covered Fraction",
+    "units": "1",
+    "communities": []
+  },
+  {
+    "parameter": "FRSNO",
+    "name": "Land Snowcover Fraction",
+    "units": "1",
+    "communities": []
+  },
+  {
+    "parameter": "GWETPROF",
+    "name": "Profile Soil Moisture",
+    "units": "1",
+    "communities": []
+  },
+  {
+    "parameter": "GWETROOT",
+    "name": "Root Zone Soil Wetness",
+    "units": "1",
+    "communities": []
+  },
+  {
+    "parameter": "GWETTOP",
+    "name": "Surface Soil Wetness",
+    "units": "1",
+    "communities": []
+  },
+  {
+    "parameter": "GWM_HEIGHT",
+    "name": "GWM Height",
+    "units": "m",
+    "communities": []
+  },
+  {
+    "parameter": "GWM_HEIGHT_ANOMALY",
+    "name": "GWM Height Anomaly",
+    "units": "m",
+    "communities": []
+  },
+  {
+    "parameter": "HDD0",
+    "name": "Heating Degree Days Below 0 C",
+    "units": "degree-day-c",
+    "communities": []
+  },
+  {
+    "parameter": "HDD10",
+    "name": "Heating Degree Days Below 10 C",
+    "units": "degree-day-c",
+    "communities": []
+  },
+  {
+    "parameter": "HDD18_3",
+    "name": "Heating Degree Days Below 18.3 C",
+    "units": "degree-day-c",
+    "communities": []
+  },
+  {
+    "parameter": "IMERG_PRECLIQUID_PROB",
+    "name": "Probability of Liquid Precipitation",
+    "units": "%",
+    "communities": []
+  },
+  {
+    "parameter": "IMERG_PRECTOT",
+    "name": "Total Precipitation",
+    "units": "mm/day",
+    "communities": []
+  },
+  {
+    "parameter": "IMERG_PRECTOT_COUNT",
+    "name": "Count of Precipitation Retrievals",
+    "units": "count",
+    "communities": []
+  },
+  {
+    "parameter": "MIDDAY_INSOL",
+    "name": "Midday Insolation Incident",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ORIGINAL_ALLSKY_SFC_LW_DWN",
+    "name": "All Sky Surface Longwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ORIGINAL_ALLSKY_SFC_SW_DIFF",
+    "name": "All Sky Surface Shortwave Diffuse Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ORIGINAL_ALLSKY_SFC_SW_DIRH",
+    "name": "All Sky Surface Shortwave Direct Horizontal Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ORIGINAL_ALLSKY_SFC_SW_DWN",
+    "name": "All Sky Surface Shortwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ORIGINAL_CLRSKY_SFC_LW_DWN",
+    "name": "Clear Sky Surface Longwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "ORIGINAL_CLRSKY_SFC_SW_DWN",
+    "name": "Clear Sky Surface Shortwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "PBLTOP",
+    "name": "Planetary Boundary Layer Top Pressure",
+    "units": "kPa",
+    "communities": []
+  },
+  {
+    "parameter": "PRECSNO",
+    "name": "Snow Precipitation",
+    "units": "mm/day",
+    "communities": []
+  },
+  {
+    "parameter": "PRECSNOLAND",
+    "name": "Snow Precipitation Land",
+    "units": "mm/day",
+    "communities": []
+  },
+  {
+    "parameter": "PRECTOTCORR",
+    "name": "Precipitation Corrected",
+    "units": "mm/day",
+    "communities": []
+  },
+  {
+    "parameter": "PS",
+    "name": "Surface Pressure",
+    "units": "kPa",
+    "communities": []
+  },
+  {
+    "parameter": "PSC",
+    "name": "Corrected Atmospheric Pressure (Adjusted For Site Elevation)",
+    "units": "kPa",
+    "communities": []
+  },
+  {
+    "parameter": "PSH",
+    "name": "Peak Sun Hour",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "PW",
+    "name": "Precipitable Water",
+    "units": "cm",
+    "communities": []
+  },
+  {
+    "parameter": "QV10M",
+    "name": "Specific Humidity at 10 Meters",
+    "units": "g/kg",
+    "communities": []
+  },
+  {
+    "parameter": "QV2M",
+    "name": "Specific Humidity at 2 Meters",
+    "units": "g/kg",
+    "communities": []
+  },
+  {
+    "parameter": "RH2M",
+    "name": "Relative Humidity at 2 Meters",
+    "units": "%",
+    "communities": []
+  },
+  {
+    "parameter": "RHOA",
+    "name": "Surface Air Density",
+    "units": "kg m-3",
+    "communities": []
+  },
+  {
+    "parameter": "SLP",
+    "name": "Sea Level Pressure",
+    "units": "kPa",
+    "communities": []
+  },
+  {
+    "parameter": "SNODP",
+    "name": "Snow Depth",
+    "units": "cm",
+    "communities": []
+  },
+  {
+    "parameter": "SRF_ALB_ADJ",
+    "name": "Surface Albedo Adjusted",
+    "units": "dimensionless",
+    "communities": []
+  },
+  {
+    "parameter": "SZA",
+    "name": "Solar Zenith Angle",
+    "units": "Degrees",
+    "communities": []
+  },
+  {
+    "parameter": "T10M",
+    "name": "Temperature at 10 Meters",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T10M_MAX",
+    "name": "Temperature at 10 Meters Maximum",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T10M_MIN",
+    "name": "Temperature at 10 Meters Minimum",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T10M_RANGE",
+    "name": "Temperature at 10 Meters Range",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T2M",
+    "name": "Temperature at 2 Meters",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T2MDEW",
+    "name": "Dew/Frost Point at 2 Meters",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T2MWET",
+    "name": "Wet Bulb Temperature at 2 Meters",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T2M_MAX",
+    "name": "Temperature at 2 Meters Maximum",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T2M_MIN",
+    "name": "Temperature at 2 Meters Minimum",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "T2M_RANGE",
+    "name": "Temperature at 2 Meters Range",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TO3",
+    "name": "Total Column Ozone",
+    "units": "Dobsons",
+    "communities": []
+  },
+  {
+    "parameter": "TOA_SW_DNI",
+    "name": "Top-Of-Atmosphere Shortwave Direct Normal Radiation",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "TOA_SW_DWN",
+    "name": "Top-Of-Atmosphere Shortwave Downward Irradiance",
+    "units": "MJ/m^2/day",
+    "communities": []
+  },
+  {
+    "parameter": "TQV",
+    "name": "Total Column Precipitable Water",
+    "units": "kg m-2",
+    "communities": []
+  },
+  {
+    "parameter": "TROPPB",
+    "name": "Tropopause Pressure based on blended estimate.",
+    "units": "kPa",
+    "communities": []
+  },
+  {
+    "parameter": "TROPQ",
+    "name": "Tropopause Specific Humidity using blended TROPP estimate.",
+    "units": "g/kg",
+    "communities": []
+  },
+  {
+    "parameter": "TROPT",
+    "name": "Tropopause Temperature using blended TROPP estimate.",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TS",
+    "name": "Earth Skin Temperature",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSOIL1",
+    "name": "Soil Temperatures Layer 1",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSOIL2",
+    "name": "Soil Temperatures Layer 2",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSOIL3",
+    "name": "Soil Temperatures Layer 3",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSOIL4",
+    "name": "Soil Temperatures Layer 4",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSOIL5",
+    "name": "Soil Temperatures Layer 5",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSOIL6",
+    "name": "Soil Temperatures Layer 6",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TSURF",
+    "name": "Surface Temperature of Land and Snow",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TS_ADJ",
+    "name": "Earth Skin Temperature Adjusted",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TS_MAX",
+    "name": "Earth Skin Temperature Maximum",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TS_MIN",
+    "name": "Earth Skin Temperature Minimum",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "TS_RANGE",
+    "name": "Earth Skin Temperature Range",
+    "units": "C",
+    "communities": []
+  },
+  {
+    "parameter": "U10M",
+    "name": "Eastward Wind at 10 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "U2M",
+    "name": "Eastward Wind at 2 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "U50M",
+    "name": "Eastward Wind at 50 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "V10M",
+    "name": "Northward Wind at 10 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "V2M",
+    "name": "Northward Wind at 2 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "V50M",
+    "name": "Northward Wind at 50 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WD10M",
+    "name": "Wind Direction at 10 Meters",
+    "units": "Degrees",
+    "communities": []
+  },
+  {
+    "parameter": "WD2M",
+    "name": "Wind Direction at 2 Meters",
+    "units": "Degrees",
+    "communities": []
+  },
+  {
+    "parameter": "WD50M",
+    "name": "Wind Direction at 50 Meters",
+    "units": "Degrees",
+    "communities": []
+  },
+  {
+    "parameter": "WS10M",
+    "name": "Wind Speed at 10 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS10M_MAX",
+    "name": "Wind Speed at 10 Meters Maximum",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS10M_MIN",
+    "name": "Wind Speed at 10 Meters Minimum",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS10M_RANGE",
+    "name": "Wind Speed at 10 Meters Range",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS2M",
+    "name": "Wind Speed at 2 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS2M_MAX",
+    "name": "Wind Speed at 2 Meters Maximum",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS2M_MIN",
+    "name": "Wind Speed at 2 Meters Minimum",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS2M_RANGE",
+    "name": "Wind Speed at 2 Meters Range",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS50M",
+    "name": "Wind Speed at 50 Meters",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS50M_MAX",
+    "name": "Wind Speed at 50 Meters Maximum",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS50M_MIN",
+    "name": "Wind Speed at 50 Meters Minimum",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WS50M_RANGE",
+    "name": "Wind Speed at 50 Meters Range",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "WSC",
+    "name": "Corrected Wind Speed (Adjusted For Elevation)",
+    "units": "m/s",
+    "communities": []
+  },
+  {
+    "parameter": "Z0M",
+    "name": "Surface Roughness",
+    "units": "m",
+    "communities": []
+  }
+]

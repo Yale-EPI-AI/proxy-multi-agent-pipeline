@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pipeline Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yale-blue: #00356B;
+    --yale-blue-light: #2b5f9e;
+    --yale-blue-faint: rgba(0, 53, 107, 0.06);
+    --epi-green: #2e7d32;
+    --epi-green-light: #4caf50;
+    --border: #d4d2cb;
+    --text-primary: #2c2c2c;
+    --text-secondary: #5a5a5a;
+    --text-muted: #8a8a8a;
+    --bg: #ffffff;
+    --accent-amber: #bf6900;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 2400px;
+    height: 1600px;
+    background: var(--bg);
+    font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  .frame {
+    width: 100%;
+    height: 100%;
+    padding: 80px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+  }
+  .pipe-block {
+    border: 4px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 40px;
+    background: var(--bg);
+    text-align: center;
+    min-width: 300px;
+  }
+  .pipe-block .pb-title {
+    font-weight: 700;
+    font-size: 46px;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .pipe-block .pb-sub {
+    font-size: 32px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    font-weight: 500;
+  }
+  .pipe-input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .pipe-input-group .pipe-block { min-width: 380px; padding: 26px 40px; }
+  .pipe-input-group .pipe-block .pb-title { font-size: 40px; }
+  .pipe-input-group .pipe-block .pb-sub { font-size: 26px; }
+  .pipe-plus {
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--text-muted);
+    line-height: 1;
+  }
+  .arrow-h {
+    font-size: 92px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .arrow-v {
+    font-size: 92px;
+    color: var(--text-muted);
+    line-height: 0.8;
+    text-align: center;
+  }
+  .pipe-stage {
+    border: 4px dashed;
+    border-radius: 26px;
+    padding: 52px 36px 34px 36px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    position: relative;
+  }
+  .pipe-stage.s1 { border-color: var(--yale-blue-light); background: rgba(0, 53, 107, 0.03); }
+  .pipe-stage.s2 { border-color: var(--epi-green); background: rgba(46, 125, 50, 0.04); }
+  .pipe-stage-label {
+    position: absolute;
+    top: -26px; left: 40px;
+    background: var(--bg);
+    padding: 2px 20px;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pipe-stage.s1 .pipe-stage-label { color: var(--yale-blue); }
+  .pipe-stage.s2 .pipe-stage-label { color: var(--epi-green); }
+  .pipe-stage .arrow-h { font-size: 64px; }
+  .pipe-stage.s1 .pipe-block { border-color: var(--yale-blue-light); background: var(--yale-blue-faint); }
+  .pipe-stage.s1 .pipe-block .pb-title { color: var(--yale-blue); }
+  .pipe-stage.s2 .pipe-block { border-color: var(--epi-green); background: rgba(46, 125, 50, 0.08); }
+  .pipe-stage.s2 .pipe-block .pb-title { color: var(--epi-green); }
+  .pipe-report {
+    border: 4px solid var(--accent-amber);
+    background: rgba(191, 105, 0, 0.08);
+  }
+  .pipe-report .pb-title { color: var(--accent-amber); }
+  .caption {
+    text-align: center;
+    font-size: 38px;
+    color: var(--text-secondary);
+    max-width: 2000px;
+    margin: 0 auto;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+  .caption em { color: var(--yale-blue); font-style: normal; font-weight: 700; }
+  .caption strong { color: var(--epi-green); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="row">
+    <div class="pipe-input-group">
+      <div class="pipe-block">
+        <div class="pb-title">EPI Indicator</div>
+        <div class="pb-sub">e.g. &ldquo;UWD&rdquo;</div>
+      </div>
+      <div class="pipe-plus">+</div>
+      <div class="pipe-block">
+        <div class="pb-title">Domain Knowledge</div>
+        <div class="pb-sub">Technical Appendix</div>
+      </div>
+    </div>
+    <div class="arrow-h">&rarr;</div>
+    <div class="pipe-stage s1">
+      <span class="pipe-stage-label">Stage 1 &middot; Research</span>
+      <div class="pipe-block">
+        <div class="pb-title">Deep Research</div>
+        <div class="pb-sub">Literature &amp; data review</div>
+      </div>
+      <div class="arrow-h">&rarr;</div>
+      <div class="pipe-block">
+        <div class="pb-title">Hypothesis Extraction</div>
+        <div class="pb-sub">Structured output</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-v">&darr;</div>
+
+  <div class="row">
+    <div class="pipe-block pipe-report">
+      <div class="pb-title">Report</div>
+      <div class="pb-sub">Verified proxies</div>
+    </div>
+    <div class="arrow-h" style="transform: rotate(180deg);">&rarr;</div>
+    <div class="pipe-stage s2">
+      <span class="pipe-stage-label">Stage 2 &middot; Exploration</span>
+      <div class="pipe-block">
+        <div class="pb-title">Exploration Agent</div>
+        <div class="pb-sub">Data &amp; statistics</div>
+      </div>
+      <div class="arrow-h">&rarr;</div>
+      <div class="pipe-block">
+        <div class="pb-title">Validation Agent</div>
+        <div class="pb-sub">Quality assurance</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="caption">
+    Given an EPI indicator, <em>Stage&nbsp;1</em> drafts candidate proxies as testable hypotheses;
+    <strong>Stage&nbsp;2</strong> verifies each with live data and statistical tests.
+  </p>
+</div>
+</body>
+</html>

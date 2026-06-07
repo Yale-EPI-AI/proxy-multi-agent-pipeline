@@ -14,18 +14,17 @@ RAW_DIR = EPI_DATA_DIR / "Raw"
 INPUTS_DIR = EPI_DATA_DIR / "Inputs"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 
+DB_PATH = OUTPUTS_DIR / "epi_data.duckdb"
+
 MASTER_VARIABLE_LIST = INPUTS_DIR / "master_variable_list.csv"
 MASTER_FILE = INPUTS_DIR / "MasterFile.csv"
 COUNTRY_DICTIONARY = INPUTS_DIR / "cdictionary_expanded.csv"
 ATTRIBUTES_FILE = INPUTS_DIR / "Attributes.csv"
 
 # ── API Keys ───────────────────────────────────────────────────────────────────
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 # ── Model Names ────────────────────────────────────────────────────────────────
-GEMINI_DEEP_RESEARCH_AGENT = "deep-research-pro-preview-12-2025"
-CLAUDE_PARSING_MODEL = "claude-sonnet-4-20250514"
 CLAUDE_VERIFICATION_MODEL = "claude-sonnet-4-6"
 CLAUDE_VALIDATION_MODEL = "claude-haiku-4-5-20251001"
 VALIDATION_MAX_TOKENS = 2048
@@ -50,14 +49,21 @@ INCLUSION_MIN_YEARS = 3                   # temporal completeness threshold
 INCLUSION_RECENCY_CUTOFF = 2018           # data must include years >= this
 INCLUSION_CRITICAL_CRITERIA = [           # criteria that trigger hard_gate rejection
     "spatial_completeness",
-    "established_methodology",
     "open_access",
+    # `documented_methodology` is DELIBERATELY excluded — the 2026-04-13 plan
+    # broadened acceptance to include satellite/sensor/digital-behavioral
+    # sources, making methodology provenance an advisory quality hint rather
+    # than a hard gate. Spatial completeness and open access remain the only
+    # two essentials: a proxy must cover enough countries and be reproducible.
+    # `signal_independence` is also advisory (see schemas.py comment).
 ]
-INCLUSION_SOFT_GATE_MIN_SCORE = 5         # min criteria_met to avoid verdict downgrade
+INCLUSION_SOFT_GATE_MIN_SCORE = 6         # min criteria_met (of 10) to avoid verdict downgrade
+
+# ── Discovery Agent ──────────────────────────────────────────────────────────
+CLAUDE_DISCOVERY_MODEL = "claude-sonnet-4-6"
+DISCOVERY_MAX_TOOL_CALLS = 80
 
 # ── Pipeline Defaults ──────────────────────────────────────────────────────────
 MAX_HYPOTHESES = 10
-DEEP_RESEARCH_POLL_INTERVAL = 10  # seconds between status checks
-DEEP_RESEARCH_MAX_WAIT = 3600     # max seconds to wait (60 min)
 API_RETRY_ATTEMPTS = 3
 API_RETRY_BACKOFF = 2.0

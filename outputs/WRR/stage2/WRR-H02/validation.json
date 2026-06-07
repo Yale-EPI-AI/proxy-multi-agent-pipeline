@@ -3,16 +3,30 @@
   "year_alignment_ok": true,
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
-  "country_coverage_adequate": true,
+  "country_coverage_adequate": false,
   "outlier_concerns": false,
-  "mechanistic_explanation": "Waste-to-Energy facilities directly divert municipal solid waste from landfills to combustion with energy recovery, mechanistically increasing the proportion of waste treated via incineration (the WRR numerator). Higher installed WtE capacity should correlate with higher waste recovery rates in countries with well-developed waste infrastructure.",
+  "mechanistic_explanation": "The hypothesis posits that Waste-to-Energy (WtE) plant capacity directly increases the proportion of waste treated with energy recovery (WRR), since each operational WtE facility diverts waste from landfills and processes it with energy extraction. However, the verify.py script tested Renewable Energy Consumption (% of total final energy consumption) from World Bank/SE4ALL—a fundamentally different variable measuring the share of renewables in total energy, NOT WtE capacity or waste-derived energy. This creates a category mismatch: renewable energy broadly includes wind, solar, hydro, and geothermal, while WtE is a narrow subset of biomass energy derived specifically from waste incineration.",
   "issues": [
-    "CRITICAL: Hypothesis specified 'Waste-to-Energy plant capacity' (count/MW) but agent substituted 'People using basic hygiene services (SH.STA.HYGN.ZS)' — a fundamentally different variable measuring sanitation access, NOT waste infrastructure or WtE capacity. This is not a reasonable proxy but a conceptually unrelated variable.",
-    "CRITICAL: Data source mismatch — hypothesis requires Statista WtE capacity data; agent used World Bank sanitation indicator instead. Substitution was documented in data_quality_notes but the variables measure entirely different constructs.",
-    "The agent states 'sanitation access is a correlated but indirect proxy' but provides no empirical or theoretical justification for why basic hygiene services should correlate with WtE capacity. This is speculative.",
-    "The positive correlation found (Pearson r=0.362, p<0.0001) likely reflects broad economic/development patterns (wealthier countries have better both hygiene services AND waste infrastructure) rather than a mechanistic link between WtE capacity and WRR.",
-    "No attempt was made to find alternative waste-management-specific indicators (e.g., Eurostat WtE data, national waste authority statistics, or OECD waste databases) before accepting a sanitation proxy.",
-    "The verdict 'partially_confirmed' is misleading because the statistical test used a misaligned proxy variable, not the actual proxy specified in the hypothesis."
+    "MAJOR: Proxy variable mismatch. Hypothesis specifies 'Waste-to-Energy plant capacity' (count or MW); script tested 'Renewable energy consumption (% of total final energy)' from World Bank EG.FEC.RNEW.ZS. These are fundamentally different variables—one is infrastructure capacity, the other is energy mix composition.",
+    "MAJOR: Data source not authentic. Hypothesis data_source specifies 'Renewable energy consumption...World Bank/SE4ALL'. The result.json shows 0 observations merged (coverage 'None-None'), indicating the World Bank fetch failed completely. No fallback to alternative waste-energy data sources (e.g., IRENA, national waste statistics) was documented in data_quality_notes.",
+    "MAJOR: Country coverage inadequate. Result shows 0 countries in merged dataset (n_observations=0, n_countries=0). This makes any statistical conclusion impossible and violates the requirement for ≥15 countries and ≥20 observations.",
+    "CRITICAL: Verdict is 'inconclusive' but mechanistic plausibility was never tested. The verify.py script attempted to fetch WB renewable energy data but failed to merge with WRR; the agent did not document why the primary hypothesis proxy (WtE capacity) was abandoned or attempt alternative waste-energy data sources (IRENA Waste-to-Energy Statistics, Eurostat waste treatment data, or UNEP waste databases).",
+    "The hypothesis ID is 'WRR-H02' but the verify.py script title says 'Waste-to-Energy Plant Capacity vs WRR' while the actual World Bank indicator tested is renewable energy share—a conceptual disconnect that was not flagged as a proxy substitution.",
+    "No documentation of why renewable energy consumption was chosen as a substitute for WtE capacity. The two variables have different causal pathways: renewable energy share depends on total energy mix and deployment of all renewable technologies; WtE capacity depends on waste volumes and incineration policy.",
+    "The result.json shows 'db_statistical_test' as verification_method but no actual statistical test was run (n_observations=0). The output is incomplete and does not reflect the script's attempted logic."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": null,
+    "outcome_focus": false,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": false,
+    "temporal_completeness": null,
+    "recency": null,
+    "open_access": true,
+    "criteria_met": 3,
+    "criteria_notes": "Renewable energy consumption (the variable actually tested) is a well-established World Bank/SE4ALL indicator with international methodology (true for established_methodology and open_access). However, it fails relevance and outcome_focus for the WRR target: renewable energy share is not a direct measure of waste-to-energy capacity or waste recovery outcomes. It is a broad energy-mix metric that conflates WtE with wind, solar, hydro, and other renewables. Spatial completeness fails: 0 countries in merged dataset, preventing meaningful geographic coverage assessment. The proxy hypothesis specifies WtE capacity—which would measure actual infrastructure and be outcome-focused—but the tested variable is fundamentally different. Even if the World Bank renewable energy data were robust (which it is as a data source), it does not validate the WRR-H02 hypothesis."
+  }
 }

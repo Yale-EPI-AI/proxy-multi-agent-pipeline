@@ -1,0 +1,716 @@
+{
+  "final_text": "```json\n{\n  \"causal_map_summary\": \"UWD (Unsafe Water DALYs) is driven primarily by lack of access to safe drinking water infrastructure and sanitation practices. Countries with poor piped water coverage and widespread open defecation bear the highest disease burden from waterborne pathogens. Secondary signals emerge from trade flows \u2014 countries importing more plastic pipes (water distribution infrastructure investment) and pharmaceuticals (healthcare system capacity) tend to have lower UWD \u2014 while satellite-derived nighttime light radiance captures the same infrastructure development gradient. VIIRS nightlights and water access indicators form the strongest proxy cluster, with open defecation rates providing a complementary behavioral signal.\",\n  \"hypotheses\": [\n    {\n      \"id\": \"UWD-H01\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2000-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"Basic drinking water services access (% of population)\",\n      \"proxy_description\": \"Share of population with access to at least basic drinking water services (JMP definition: improved source within 30 min round trip). Directly captures the infrastructure gap that drives waterborne disease burden.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"r=-0.81, rho=-0.88\"\n      },\n      \"mechanism\": \"Population without access to improved water sources is exposed to fecal-oral pathogens (Vibrio cholerae, Cryptosporidium, E. coli). Higher access rates directly reduce ingestion of contaminated water, cutting DALYs from diarrhea, typhoid, and hepatitis A. The near-monotonic Spearman rho of -0.88 reflects the near-direct causal link.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2014 Basic Drinking Water Services\",\n        \"organization\": \"World Bank / WHO-UNICEF JMP\",\n        \"url\": \"https://data.worldbank.org/indicator/SH.H2O.BASW.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"207 countries, 2000-2024\",\n        \"country_count_estimate\": 207,\n        \"temporal_span\": \"2000-2024\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"survey\"\n      },\n      \"confidence\": \"high\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:SH.H2O.BASW.ZS\",\n      \"caveats\": [\n        \"This is mechanistically so close to UWD that it risks circularity \u2014 IHME may use JMP access data as a covariate in GBD models\",\n        \"'Basic' access does not distinguish safe from unsafe improved sources (e.g., shallow wells can be contaminated)\",\n        \"Survey-based estimates have interpolation gaps in low-data countries\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H02\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2000-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"Open defecation rate (% of population)\",\n      \"proxy_description\": \"Percentage of population practicing open defecation (JMP). Open defecation is the primary driver of fecal contamination of surface and groundwater sources, creating the contamination pathway that makes drinking water unsafe.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"r=0.72, rho=0.88\"\n      },\n      \"mechanism\": \"Open defecation deposits human feces near water bodies, fields, and paths. Rain and runoff carry pathogens into shallow wells and surface water. Countries with >20% open defecation rates face endemic cholera, typhoid, and cryptosporidiosis. The exceptionally high Spearman rho (0.885) reflects the near-monotonic relationship between fecal contamination intensity and waterborne disease burden.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2014 Open Defecation\",\n        \"organization\": \"World Bank / WHO-UNICEF JMP\",\n        \"url\": \"https://data.worldbank.org/indicator/SH.STA.ODFC.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"207 countries, 2000-2024\",\n        \"country_count_estimate\": 207,\n        \"temporal_span\": \"2000-2024\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"survey\"\n      },\n      \"confidence\": \"high\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:SH.STA.ODFC.ZS\",\n      \"caveats\": [\n        \"Like SH.H2O.BASW.ZS, this may be used as a GBD covariate \u2014 partial circularity possible\",\n        \"Self-reported and observational survey methods vary across countries\",\n        \"Captures contamination pathway but not treatment effectiveness downstream\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H03\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2000-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"Safely managed drinking water services (% of population)\",\n      \"proxy_description\": \"Share of population using drinking water from an improved source that is accessible on premises, available when needed, and free from fecal and priority chemical contamination (JMP Tier 3 \u2014 highest standard). More stringent than basic access, capturing water quality not just proximity.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"r=-0.70, rho=-0.90\"\n      },\n      \"mechanism\": \"Safely managed water \u2014 with on-premise access, continuous supply, and tested quality \u2014 eliminates contamination exposure at the point of use. The Spearman rho of -0.90 is the strongest monotonic correlation in this analysis, reflecting that quality-assured water supply directly severs the exposure pathway for all waterborne pathogens simultaneously.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2014 Safely Managed Drinking Water\",\n        \"organization\": \"World Bank / WHO-UNICEF JMP\",\n        \"url\": \"https://data.worldbank.org/indicator/SH.H2O.SMDW.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"144 countries, 2000-2024\",\n        \"country_count_estimate\": 144,\n        \"temporal_span\": \"2000-2024\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"survey\"\n      },\n      \"confidence\": \"high\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:SH.H2O.SMDW.ZS\",\n      \"caveats\": [\n        \"Coverage is only 144 countries \u2014 poorest nations often lack data for this higher-tier indicator\",\n        \"JMP modeled estimates for safely managed water have wider uncertainty intervals than basic access\",\n        \"Near-direct causal link implies potential circular use in GBD modeling\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H04\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2015-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"VIIRS Nighttime Light Radiance (mean)\",\n      \"proxy_description\": \"Annual mean nighttime radiance (nanoWatts/cm\u00b2/sr) from the VIIRS Day/Night Band, aggregated to country level. Serves as a satellite-derived proxy for electrification, infrastructure density, and economic activity \u2014 all upstream determinants of water treatment and distribution capacity.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"r=-0.23, rho=-0.69\"\n      },\n      \"mechanism\": \"Electrification is a prerequisite for operating water treatment plants, pumping stations, and UV/chlorine disinfection systems. Higher nighttime radiance indicates denser electrified infrastructure. The large gap between Pearson r (-0.23) and Spearman rho (-0.69) signals a strongly nonlinear (log) relationship: darkness (radiance near 0) is concentrated in sub-Saharan African and South Asian countries with the highest UWD burdens, while moderate-to-high radiance countries cluster near zero DALYs.\",\n      \"data_source\": {\n        \"name\": \"NOAA VIIRS Day/Night Band Monthly V1 \u2014 avg_rad\",\n        \"organization\": \"NOAA / NASA\",\n        \"url\": \"https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_MONTHLY_V1_VCMSLCFG\",\n        \"format\": \"Google Earth Engine ImageCollection\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"208 countries, 2015-2024\",\n        \"country_count_estimate\": 208,\n        \"temporal_span\": \"2015-2024\",\n        \"update_frequency\": \"monthly (aggregated annually)\",\n        \"methodology_status\": \"satellite_derived\",\n        \"data_type\": \"satellite\"\n      },\n      \"confidence\": \"medium\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"gee:noaa_viirs_dnb_monthly_v1_vcmslcfg_avg_rad_mean\",\n      \"caveats\": [\n        \"Radiance is heavily right-skewed; log transformation is essential before modeling\",\n        \"Overglow from bright neighbors can inflate radiance for small or densely packed countries\",\n        \"Nightlights capture electrification broadly, not water infrastructure specifically \u2014 confounded by industrial activity\",\n        \"Only available from 2012 onward, limiting historical analysis\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H05\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2010-2023\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"Plastic pipes & fittings imports (HS 3917, USD)\",\n      \"proxy_description\": \"Annual import value (USD) of plastic tubes, pipes, hoses, and fittings (HS 3917) \u2014 the primary material used in water distribution networks, household plumbing, and irrigation infrastructure in developing countries.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"r=-0.24, rho=-0.56\"\n      },\n      \"mechanism\": \"Countries actively expanding piped water networks import large volumes of plastic pipe to extend distribution systems. Imports per capita of HS 3917 therefore reflect the pace of water infrastructure investment. Countries with high pipe import intensity are building the distribution systems that eventually connect households to treated water, directly reducing unsafe water exposure. The strong Spearman rho despite weak Pearson r reflects the log-scale relationship: the poorest countries import negligible pipe and suffer the highest disease burden.\",\n      \"data_source\": {\n        \"name\": \"UN Comtrade \u2014 HS 3917 Plastic Pipes & Fittings Imports\",\n        \"organization\": \"United Nations Statistics Division\",\n        \"url\": \"https://comtradeplus.un.org/\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"187 countries, 2010-2023\",\n        \"country_count_estimate\": 187,\n        \"temporal_span\": \"2010-2023\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"administrative\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"medium\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"comtrade:HS3917_M_usd\",\n      \"caveats\": [\n        \"Import value in USD is not normalized by population or GDP \u2014 larger economies import more absolutely without necessarily having better per-capita coverage\",\n        \"HS 3917 includes industrial and agricultural piping, not only drinking water infrastructure\",\n        \"Re-export and entrep\u00f4t trade (e.g., Singapore, UAE) inflate values for transit hubs\",\n        \"Currency fluctuations affect USD valuations across years\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H06\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2010-2023\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"Pharmaceutical imports \u2014 retail medicaments (HS 3004, USD)\",\n      \"proxy_description\": \"Annual import value of packaged retail medicaments (HS 3004) \u2014 the broadest pharmaceutical trade category, reflecting a country's healthcare system capacity and population's access to medical treatment.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"r=-0.21, rho=-0.55\"\n      },\n      \"mechanism\": \"Countries with robust healthcare systems import larger volumes of pharmaceuticals per capita, including oral rehydration salts, antibiotics (for treating cholera/typhoid), and antiparasitic drugs. Higher pharmaceutical import intensity signals both (a) greater healthcare system capacity to treat waterborne disease and (b) broader economic development that correlates with water infrastructure investment. The Spearman rho of -0.55 reflects the ordering: LDCs with minimal pharmaceutical imports also tend to have the worst water safety outcomes.\",\n      \"data_source\": {\n        \"name\": \"UN Comtrade \u2014 HS 3004 Retail Medicaments Imports\",\n        \"organization\": \"United Nations Statistics Division\",\n        \"url\": \"https://comtradeplus.un.org/\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"185 countries, 2010-2023\",\n        \"country_count_estimate\": 185,\n        \"temporal_span\": \"2010-2023\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"administrative\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"medium\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"comtrade:HS3004_M_usd\",\n      \"caveats\": [\n        \"Pharmaceutical imports are a broad development proxy, not specific to water-related disease treatment\",\n        \"Domestic pharmaceutical manufacturing (India, China, Brazil) means imports understate true healthcare capacity for these countries\",\n        \"USD values are not normalized by population; large countries dominate without adjustment\",\n        \"Correlation may partly reflect shared development gradient rather than a direct causal mechanism\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H07\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2015-2020\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"MODIS Percent Tree Cover (MOD44B)\",\n      \"proxy_description\": \"Annual mean percent tree cover per country from MODIS MOD44B, 250m resolution. Captures forest cover as a proxy for watershed protection and natural water filtration capacity \u2014 forests reduce surface runoff, filter sediment, and maintain groundwater recharge.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"linear\",\n        \"strength_estimate\": \"r=-0.24, rho=-0.08\"\n      },\n      \"mechanism\": \"Forested watersheds provide natural water purification through soil filtration, reduced erosion, and stabilized hydrological cycles. Deforested landscapes increase sedimentation and agricultural runoff into water sources, elevating pathogen and chemical contamination. However, the weak Spearman rho (-0.08) suggests that tree cover is a poor proxy at the national scale \u2014 countries with high UWD burdens (South Asia, sub-Saharan Africa) span a wide range of forest cover, and tropical forest countries like DRC also have high water disease burdens due to lack of treatment rather than lack of watershed protection.\",\n      \"data_source\": {\n        \"name\": \"MODIS MOD44B \u2014 Percent Tree Cover\",\n        \"organization\": \"NASA / USGS\",\n        \"url\": \"https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MOD44B\",\n        \"format\": \"Google Earth Engine ImageCollection\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"206 countries, 2015-2020\",\n        \"country_count_estimate\": 206,\n        \"temporal_span\": \"2000-2020\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"satellite_derived\",\n        \"data_type\": \"satellite\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"gee:modis_006_mod44b_percent_tree_cover_mean\",\n      \"caveats\": [\n        \"Weak Spearman rho (-0.08) indicates poor rank-order predictability at national scale\",\n        \"Confounded by tropical countries that have high tree cover but also high UWD (DRC, PNG, CAR)\",\n        \"National mean tree cover masks sub-national variation in populated watershed areas\",\n        \"Relationship may be inverted in some regions (arid countries with low tree cover but good piped water, e.g., Gulf states)\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"UWD-H08\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"1990-2022\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"UWD\",\n      \"proxy_variable\": \"NASA POWER Corrected Precipitation (PRECTOTCORR)\",\n      \"proxy_description\": \"Annual mean daily precipitation (mm/day) from NASA MERRA-2 reanalysis, bias-corrected against gauge observations. High rainfall can both dilute contaminants and increase runoff-driven fecal contamination of water sources.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"nonlinear\",\n        \"strength_estimate\": \"r=0.02, rho=0.14\"\n      },\n      \"mechanism\": \"Precipitation has a theoretically ambiguous relationship with UWD. High rainfall increases surface runoff carrying agricultural and fecal waste into water sources (positive association with contamination), but can also dilute standing contaminants. At the national scale, this ambiguity results in near-zero correlation (Pearson r=0.02), with a weak Spearman rho of 0.14 suggesting that wetter countries marginally trend toward higher UWD \u2014 possibly because tropical high-rainfall countries overlap with LDC profiles where water treatment infrastructure is absent. Not recommended as a standalone proxy.\",\n      \"data_source\": {\n        \"name\": \"NASA POWER MERRA-2 \u2014 Corrected Precipitation\",\n        \"organization\": \"NASA Langley Research Center\",\n        \"url\": \"https://power.larc.nasa.gov/\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"196 countries, 1990-2022\",\n        \"country_count_estimate\": 196,\n        \"temporal_span\": \"1990-2022\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"modeled\",\n        \"data_type\": \"modeled\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"nasa:PRECTOTCORR\",\n      \"caveats\": [\n        \"Near-zero Pearson r (0.02) and weak Spearman rho (0.14) make this a poor standalone proxy\",\n        \"The precipitation-contamination relationship is highly context-dependent (monsoon vs. arid vs. temperate)\",\n        \"Could be useful as an interaction term with infrastructure variables (high rain \u00d7 low infrastructure \u2192 high UWD)\",\n        \"National annual averages mask intra-annual variability (monsoon peaks) most relevant to disease spikes\"\n      ],\n      \"references\": []\n    }\n  ]\n}\n```",
+  "tool_log": [
+    {
+      "call_number": 1,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "drinking water access safe",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"EG.CFT.ACCS.RU.ZS\", \"name\": \"Access to clean fuels and technologies for cooking, rural (% of rural population)\", \"source\": \"World Development Indicators\"}, {\"id\": \"EG.CFT.ACCS.UR.ZS\", \"name\":"
+    },
+    {
+      "call_number": 2,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "diarrhea waterborne disease",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 3,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "water purification treatment chemicals",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"8419\", \"text\": \"Machinery, plant (not domestic), or laboratory equipment; electrically heated or not, (excluding items in 85.14) for the treatment of materials by a process involving change o"
+    },
+    {
+      "call_number": 4,
+      "tool": "search_gee",
+      "input": {
+        "query": "water quality surface water",
+        "max_results": 8
+      },
+      "result_preview": "[{\"asset_id\": \"CAS/IGSNRR/PML/V2_v017\", \"title\": \"PML_V2.1.7: Coupled Evapotranspiration and Gross Primary Product (GPP) [deprecated]\", \"bands\": [\"GPP\", \"Ec\", \"Es\", \"Ei\", \"ET_water\"], \"years\": [2000, "
+    },
+    {
+      "call_number": 5,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "basic drinking water services rural urban",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"AG.LND.EL5M.RU.K2\", \"name\": \"Rural land area where elevation is below 5 meters (sq. km)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.EL5M.RU.ZS\", \"name\": \"Rural land area where"
+    },
+    {
+      "call_number": 6,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "safe water sanitation access",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 7,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "chlorine disinfectant water treatment",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"8419\", \"text\": \"Machinery, plant (not domestic), or laboratory equipment; electrically heated or not, (excluding items in 85.14) for the treatment of materials by a process involving change o"
+    },
+    {
+      "call_number": 8,
+      "tool": "search_gdelt",
+      "input": {
+        "query": "water pollution contamination",
+        "max_results": 10
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 9,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "safely managed drinking water household",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"ER.GDP.FWTL.M3.KD\", \"name\": \"Water productivity, total (constant 2015 US$ GDP per cubic meter of total freshwater withdrawal)\", \"source\": \"World Development Indicators\"}, {\"id\": \"ER.H2O.FWAG."
+    },
+    {
+      "call_number": 10,
+      "tool": "search_gdelt",
+      "input": {
+        "query": "water",
+        "max_results": 10
+      },
+      "result_preview": "[{\"theme\": \"ENV_WATERPOLLUTION\", \"desc\": \"Water pollution / contamination\"}, {\"theme\": \"EPU_POLICY_WATER\", \"desc\": \"Water policy / governance\"}, {\"theme\": \"WATER_SECURITY\", \"desc\": \"Water security / s"
+    },
+    {
+      "call_number": 11,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "oral rehydration pharmaceutical medicament",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"0508\", \"text\": \"Coral and similar materials, unworked or simply prepared, shells of molluscs, crustaceans or echinoderms and cuttle-bone, not cut to shape powder and waste thereof\", \"aggrleve"
+    },
+    {
+      "call_number": 12,
+      "tool": "search_gee",
+      "input": {
+        "query": "NDVI vegetation land cover",
+        "max_results": 6
+      },
+      "result_preview": "[{\"asset_id\": \"ASTER/AST_L1T_003\", \"title\": \"ASTER L1T Radiance\", \"bands\": [\"B01\", \"B02\", \"B3N\", \"B04\", \"B05\", \"B06\", \"B07\", \"B08\", \"B09\", \"B10\"], \"years\": [2000, 2025], \"license\": \"proprietary\"}, {\"a"
+    },
+    {
+      "call_number": 13,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "open defecation sanitation rural",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"AG.LND.EL5M.RU.K2\", \"name\": \"Rural land area where elevation is below 5 meters (sq. km)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.EL5M.RU.ZS\", \"name\": \"Rural land area where"
+    },
+    {
+      "call_number": 14,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "pipe tube pump water infrastructure",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"3917\", \"text\": \"Tubes, pipes and hoses and fittings thereof (for example, joints, elbows, flanges), of plastics\", \"aggrlevel\": 4}, {\"id\": \"4009\", \"text\": \"Tubes, pipes and hoses, of vulcanise"
+    },
+    {
+      "call_number": 15,
+      "tool": "search_wikipedia",
+      "input": {
+        "query": "diarrhea waterborne disease cholera",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 16,
+      "tool": "search_gee",
+      "input": {
+        "query": "nighttime lights VIIRS urban",
+        "max_results": 5
+      },
+      "result_preview": "[{\"asset_id\": \"COPERNICUS/MARINE/SATELLITE_OCEAN_COLOR/V6\", \"title\": \"Copernicus Satellite Ocean Color Daily Data\", \"bands\": [\"MERIS_nobs\", \"MODISA_nobs\", \"OLCI-A_nobs\", \"OLCI-B_nobs\", \"SeaWiFS_nobs\","
+    },
+    {
+      "call_number": 17,
+      "tool": "search_wikipedia",
+      "input": {
+        "query": "diarrhea",
+        "max_results": 5
+      },
+      "result_preview": "[{\"title\": \"Diarrhea\", \"project\": \"en.wikipedia\", \"description\": \"\", \"url\": \"https://en.wikipedia.org/wiki/Diarrhea\"}, {\"title\": \"Diarrhea Planet\", \"project\": \"en.wikipedia\", \"description\": \"\", \"url\":"
+    },
+    {
+      "call_number": 18,
+      "tool": "search_wikipedia",
+      "input": {
+        "query": "cholera",
+        "max_results": 5
+      },
+      "result_preview": "[{\"title\": \"Cholera\", \"project\": \"en.wikipedia\", \"description\": \"\", \"url\": \"https://en.wikipedia.org/wiki/Cholera\"}, {\"title\": \"Cholera toxin\", \"project\": \"en.wikipedia\", \"description\": \"\", \"url\": \"ht"
+    },
+    {
+      "call_number": 19,
+      "tool": "search_gee",
+      "input": {
+        "query": "Sentinel-5P nitrogen dioxide NO2",
+        "max_results": 5
+      },
+      "result_preview": "[{\"asset_id\": \"FAO/GHG/1/DROSA_A\", \"title\": \"UN FAO Drained Organic Soils Area (Annual) 1.0\", \"bands\": [\"cropland\", \"grassland\"], \"years\": [1992, 2018], \"license\": \"proprietary\"}, {\"asset_id\": \"FAO/GH"
+    },
+    {
+      "call_number": 20,
+      "tool": "search_openaq",
+      "input": {
+        "query": "pm25 particulate",
+        "max_results": 5
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 21,
+      "tool": "search_gee",
+      "input": {
+        "query": "MODIS land cover tree canopy",
+        "max_results": 5
+      },
+      "result_preview": "[{\"asset_id\": \"ASTER/AST_L1T_003\", \"title\": \"ASTER L1T Radiance\", \"bands\": [\"B01\", \"B02\", \"B3N\", \"B04\", \"B05\", \"B06\", \"B07\", \"B08\", \"B09\", \"B10\"], \"years\": [2000, 2025], \"license\": \"proprietary\"}, {\"a"
+    },
+    {
+      "call_number": 22,
+      "tool": "search_openaq",
+      "input": {
+        "query": "pm2.5",
+        "max_results": 5
+      },
+      "result_preview": "[{\"name\": \"pm25\", \"id\": 2, \"units\": \"\\u00b5g/m\\u00b3\", \"description\": \"Particulate matter less than 2.5 micrometers in diameter mass concentration\"}, {\"name\": \"um025\", \"id\": 130, \"units\": \"particles/c"
+    },
+    {
+      "call_number": 23,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "plastic pipe plumbing fittings",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"3917\", \"text\": \"Tubes, pipes and hoses and fittings thereof (for example, joints, elbows, flanges), of plastics\", \"aggrlevel\": 4}, {\"id\": \"391732\", \"text\": \"Plastics; tubes, pipes and hoses t"
+    },
+    {
+      "call_number": 24,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "mortality child under-five",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 25,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "water sanitation hygiene",
+        "max_results": 10
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 26,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "precipitation rainfall temperature",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 27,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "precipitation",
+        "max_results": 8
+      },
+      "result_preview": "[{\"parameter\": \"IMERG_PRECLIQUID_PROB\", \"name\": \"Probability of Liquid Precipitation\", \"units\": \"%\"}, {\"parameter\": \"IMERG_PRECTOT\", \"name\": \"Total Precipitation\", \"units\": \"mm/day\"}, {\"parameter\": \"I"
+    },
+    {
+      "call_number": 28,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "temperature surface",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 29,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "mortality diarrhea child infant",
+        "max_results": 6
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 30,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "child mortality under five deaths",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"AG.LND.CREL.HA\", \"name\": \"Land under cereal production (hectares)\", \"source\": \"World Development Indicators\"}]"
+    },
+    {
+      "call_number": 31,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "handwashing soap hygiene",
+        "max_results": 6
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 32,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "soap hygiene detergent",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"3401\", \"text\": \"Soap; organic surface-active preparations used as soap, skin washing, in bars, cakes, moulded pieces, shapes, liquid or cream, containing soap or not; for retail, paper, waddi"
+    },
+    {
+      "call_number": 33,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "SH.H2O.BASW.ZS"
+      },
+      "result_preview": "{\"indicator_code\": \"SH.H2O.BASW.ZS\", \"n_countries\": 207, \"n_observations\": 2636, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": [\"AFG\", \"A"
+    },
+    {
+      "call_number": 34,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "SH.STA.ODFC.ZS"
+      },
+      "result_preview": "{\"indicator_code\": \"SH.STA.ODFC.ZS\", \"n_countries\": 207, \"n_observations\": 2577, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": [\"AFG\", \"A"
+    },
+    {
+      "call_number": 35,
+      "tool": "preview_gdelt",
+      "input": {
+        "theme": "ENV_WATERPOLLUTION"
+      },
+      "result_preview": "{\"theme\": \"ENV_WATERPOLLUTION\", \"estimated_gb_per_day\": 1.3, \"sample\": [{\"fips\": \"FR\", \"iso3\": \"FRA\", \"theme_mentions\": 0, \"all_mentions\": 93844}, {\"fips\": \"EG\", \"iso3\": \"EGY\", \"theme_mentions\": 0, \"a"
+    },
+    {
+      "call_number": 36,
+      "tool": "preview_wikipedia",
+      "input": {
+        "article": "Cholera"
+      },
+      "result_preview": "{\"article\": \"Cholera\", \"project\": \"en.wikipedia\", \"years\": [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], \"n_years\": 10, \"total_pageviews\": 9138454}"
+    },
+    {
+      "call_number": 37,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "SH.H2O.SMDW.ZS"
+      },
+      "result_preview": "{\"indicator_code\": \"SH.H2O.SMDW.ZS\", \"n_countries\": 144, \"n_observations\": 1860, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": [\"AFG\", \"A"
+    },
+    {
+      "call_number": 38,
+      "tool": "preview_comtrade",
+      "input": {
+        "hs_code": "3917",
+        "flow": "M"
+      },
+      "result_preview": "{\"hs_code\": \"3917\", \"flow\": \"M\", \"year\": 2022, \"n_countries\": 159, \"n_observations\": 159, \"sample\": [{\"iso\": \"ABW\", \"year\": 2022, \"value\": 4662709.431}, {\"iso\": \"AGO\", \"year\": 2022, \"value\": 37294751."
+    },
+    {
+      "call_number": 39,
+      "tool": "preview_openaq",
+      "input": {
+        "parameter": "pm25"
+      },
+      "result_preview": "{\"parameter\": \"pm25\", \"parameter_id\": 2, \"sample\": [{\"iso2\": \"US\", \"iso3\": \"USA\", \"n_locations\": 100}, {\"iso2\": \"DE\", \"iso3\": \"DEU\", \"n_locations\": 100}, {\"iso2\": \"IN\", \"iso3\": \"IND\", \"n_locations\": 1"
+    },
+    {
+      "call_number": 40,
+      "tool": "preview_gee",
+      "input": {
+        "asset_id": "NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG",
+        "band": "avg_rad"
+      },
+      "result_preview": "{\"asset_id\": \"NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG\", \"band\": \"avg_rad\", \"has_images\": true, \"reducer_hint\": \"mean\"}"
+    },
+    {
+      "call_number": 41,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "SH.H2O.BASW.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:SH.H2O.BASW.ZS\", \"n_observations\": 5034, \"n_countries\": 207, \"year_min\": 2000, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 42,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "SH.STA.ODFC.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:SH.STA.ODFC.ZS\", \"n_observations\": 4917, \"n_countries\": 207, \"year_min\": 2000, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 43,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "SH.H2O.SMDW.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:SH.H2O.SMDW.ZS\", \"n_observations\": 3541, \"n_countries\": 144, \"year_min\": 2000, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 44,
+      "tool": "fetch_comtrade",
+      "input": {
+        "hs_code": "3917",
+        "flow": "M"
+      },
+      "result_preview": "{\"variable_id\": \"comtrade:HS3917_M_usd\", \"n_observations\": 2315, \"n_countries\": 187, \"year_min\": 2010, \"year_max\": 2023}"
+    },
+    {
+      "call_number": 45,
+      "tool": "fetch_gdelt",
+      "input": {
+        "theme": "ENV_WATERPOLLUTION"
+      },
+      "result_preview": "{\"variable_id\": \"gdelt:env-waterpollution_share\", \"n_observations\": 1030, \"n_countries\": 206, \"year_min\": 2020, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 46,
+      "tool": "fetch_wikipedia",
+      "input": {
+        "article": "Cholera"
+      },
+      "result_preview": "{\"variable_id\": \"wiki:cholera_local\", \"n_observations\": 1025, \"n_countries\": 131, \"year_min\": 2016, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 47,
+      "tool": "fetch_gee",
+      "input": {
+        "asset_id": "NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG",
+        "band": "avg_rad",
+        "reducer": "mean"
+      },
+      "result_preview": "{\"variable_id\": \"gee:noaa_viirs_dnb_monthly_v1_vcmslcfg_avg_rad_mean\", \"n_observations\": 2080, \"n_countries\": 208, \"year_min\": 2015, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 48,
+      "tool": "fetch_nasa_power",
+      "input": {
+        "parameter": "PRECTOTCORR"
+      },
+      "result_preview": "{\"variable_id\": \"nasa:PRECTOTCORR\", \"n_observations\": 6468, \"n_countries\": 196, \"year_min\": 1990, \"year_max\": 2022}"
+    },
+    {
+      "call_number": 49,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:SH.H2O.BASW.ZS",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.8140808039165187, \"pearson_p\": 0.0, \"spearman_rho\": -0.8827944576171503, \"spearman_p\": 0.0, \"n_observations\": 4196, \"n_countries\": 194}"
+    },
+    {
+      "call_number": 50,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:SH.STA.ODFC.ZS",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": 0.7229428211084422, \"pearson_p\": 0.0, \"spearman_rho\": 0.8846968923265142, \"spearman_p\": 0.0, \"n_observations\": 4125, \"n_countries\": 194}"
+    },
+    {
+      "call_number": 51,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:SH.H2O.SMDW.ZS",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.6966969931918248, \"pearson_p\": 0.0, \"spearman_rho\": -0.9006975444020584, \"spearman_p\": 0.0, \"n_observations\": 2987, \"n_countries\": 137}"
+    },
+    {
+      "call_number": 52,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "comtrade:HS3917_M_usd",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.23850523547276187, \"pearson_p\": 1.802977253620957e-26, \"spearman_rho\": -0.5629442596418287, \"spearman_p\": 1.925007689122453e-162, \"n_observations\": 1938, \"n_countries\": 179}"
+    },
+    {
+      "call_number": 53,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "gdelt:env-waterpollution_share",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": NaN, \"pearson_p\": NaN, \"spearman_rho\": NaN, \"spearman_p\": NaN, \"n_observations\": 388, \"n_countries\": 194}"
+    },
+    {
+      "call_number": 54,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wiki:cholera_local",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": 0.04930378528756163, \"pearson_p\": 0.20586933552722703, \"spearman_rho\": 0.11634736529298706, \"spearman_p\": 0.0027577566344142482, \"n_observations\": 660, \"n_countries\": 123}"
+    },
+    {
+      "call_number": 55,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "gee:noaa_viirs_dnb_monthly_v1_vcmslcfg_avg_rad_mean",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.23309653174066122, \"pearson_p\": 2.1927939151242048e-18, \"spearman_rho\": -0.6906078973289006, \"spearman_p\": 5.0364313762531464e-195, \"n_observations\": 1372, \"n_countries\": 196}"
+    },
+    {
+      "call_number": 56,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "nasa:PRECTOTCORR",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": 0.017160041436319405, \"pearson_p\": 0.176413153237382, \"spearman_rho\": 0.1360622479579592, \"spearman_p\": 4.8528712026255284e-27, \"n_observations\": 6208, \"n_countries\": 194}"
+    },
+    {
+      "call_number": 57,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "nitrogenous fertilizer ammonium nitrate",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"310230\", \"text\": \"Fertilizers, mineral or chemical; nitrogenous, ammonium nitrate, whether or not in aqueous solution\", \"aggrlevel\": 6}, {\"id\": \"310260\", \"text\": \"Fertilizers, mineral or chem"
+    },
+    {
+      "call_number": 58,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "water pump filter treatment equipment",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"8419\", \"text\": \"Machinery, plant (not domestic), or laboratory equipment; electrically heated or not, (excluding items in 85.14) for the treatment of materials by a process involving change o"
+    },
+    {
+      "call_number": 59,
+      "tool": "search_gee",
+      "input": {
+        "query": "MODIS burned area fire",
+        "max_results": 5
+      },
+      "result_preview": "[{\"asset_id\": \"ASTER/AST_L1T_003\", \"title\": \"ASTER L1T Radiance\", \"bands\": [\"B01\", \"B02\", \"B3N\", \"B04\", \"B05\", \"B06\", \"B07\", \"B08\", \"B09\", \"B10\"], \"years\": [2000, 2025], \"license\": \"proprietary\"}, {\"a"
+    },
+    {
+      "call_number": 60,
+      "tool": "preview_comtrade",
+      "input": {
+        "hs_code": "3102",
+        "flow": "M"
+      },
+      "result_preview": "{\"hs_code\": \"3102\", \"flow\": \"M\", \"year\": 2022, \"n_countries\": 159, \"n_observations\": 159, \"sample\": [{\"iso\": \"ABW\", \"year\": 2022, \"value\": 29326.815}, {\"iso\": \"AGO\", \"year\": 2022, \"value\": 58901260.64"
+    },
+    {
+      "call_number": 61,
+      "tool": "preview_comtrade",
+      "input": {
+        "hs_code": "3004",
+        "flow": "M"
+      },
+      "result_preview": "{\"hs_code\": \"3004\", \"flow\": \"M\", \"year\": 2022, \"n_countries\": 158, \"n_observations\": 158, \"sample\": [{\"iso\": \"ABW\", \"year\": 2022, \"value\": 25980007.455}, {\"iso\": \"AGO\", \"year\": 2022, \"value\": 31337576"
+    },
+    {
+      "call_number": 62,
+      "tool": "preview_gee",
+      "input": {
+        "asset_id": "MODIS/061/MOD13A3",
+        "band": "_1_km_monthly_NDVI"
+      },
+      "result_preview": "{\"asset_id\": \"MODIS/061/MOD13A3\", \"band\": \"_1_km_monthly_NDVI\", \"has_images\": true, \"reducer_hint\": \"mean\"}"
+    },
+    {
+      "call_number": 63,
+      "tool": "fetch_comtrade",
+      "input": {
+        "hs_code": "3102",
+        "flow": "M"
+      },
+      "result_preview": "{\"variable_id\": \"comtrade:HS3102_M_usd\", \"n_observations\": 319, \"n_countries\": 161, \"year_min\": 2021, \"year_max\": 2022}"
+    },
+    {
+      "call_number": 64,
+      "tool": "fetch_comtrade",
+      "input": {
+        "hs_code": "3004",
+        "flow": "M"
+      },
+      "result_preview": "{\"variable_id\": \"comtrade:HS3004_M_usd\", \"n_observations\": 2305, \"n_countries\": 185, \"year_min\": 2010, \"year_max\": 2023}"
+    },
+    {
+      "call_number": 65,
+      "tool": "fetch_gee",
+      "input": {
+        "asset_id": "MODIS/061/MOD13A3",
+        "band": "_1_km_monthly_NDVI",
+        "reducer": "mean"
+      },
+      "result_preview": "{\"variable_id\": \"gee:modis_061_mod13a3__1_km_monthly_ndvi_mean\", \"n_observations\": 0, \"n_countries\": 0, \"year_min\": null, \"year_max\": null}"
+    },
+    {
+      "call_number": 66,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "comtrade:HS3102_M_usd",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.15081250908328386, \"pearson_p\": 0.06105039388693844, \"spearman_rho\": -0.27301730527536977, \"spearman_p\": 0.0005880676722388745, \"n_observations\": 155, \"n_countries\": 155}"
+    },
+    {
+      "call_number": 67,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "comtrade:HS3004_M_usd",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.21494393983785598, \"pearson_p\": 1.3468529928576927e-21, \"spearman_rho\": -0.5542851796913981, \"spearman_p\": 8.346997416499933e-156, \"n_observations\": 1929, \"n_countries\": 177}"
+    },
+    {
+      "call_number": 68,
+      "tool": "search_gee",
+      "input": {
+        "query": "MODIS MOD13 vegetation index annual",
+        "max_results": 5
+      },
+      "result_preview": "[{\"asset_id\": \"CAS/IGSNRR/PML/V2_v017\", \"title\": \"PML_V2.1.7: Coupled Evapotranspiration and Gross Primary Product (GPP) [deprecated]\", \"bands\": [\"GPP\", \"Ec\", \"Es\", \"Ei\", \"ET_water\"], \"years\": [2000, "
+    },
+    {
+      "call_number": 69,
+      "tool": "search_gee",
+      "input": {
+        "query": "tree cover forest MOD44B",
+        "max_results": 5
+      },
+      "result_preview": "[{\"asset_id\": \"ASTER/AST_L1T_003\", \"title\": \"ASTER L1T Radiance\", \"bands\": [\"B01\", \"B02\", \"B3N\", \"B04\", \"B05\", \"B06\", \"B07\", \"B08\", \"B09\", \"B10\"], \"years\": [2000, 2025], \"license\": \"proprietary\"}, {\"a"
+    },
+    {
+      "call_number": 70,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "electricity rural access infrastructure",
+        "max_results": 5
+      },
+      "result_preview": "[{\"id\": \"AG.LND.EL5M.RU.K2\", \"name\": \"Rural land area where elevation is below 5 meters (sq. km)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.EL5M.RU.ZS\", \"name\": \"Rural land area where"
+    },
+    {
+      "call_number": 71,
+      "tool": "search_comtrade",
+      "input": {
+        "query": "cement construction building",
+        "max_results": 5
+      },
+      "result_preview": "[{\"id\": \"300640\", \"text\": \"Pharmaceutical goods; dental cements and other dental fillings, bone reconstruction cements\", \"aggrlevel\": 6}, {\"id\": \"681011\", \"text\": \"Cement, concrete or artificial stone"
+    },
+    {
+      "call_number": 72,
+      "tool": "preview_gee",
+      "input": {
+        "asset_id": "MODIS/006/MOD44B",
+        "band": "Percent_Tree_Cover"
+      },
+      "result_preview": "{\"asset_id\": \"MODIS/006/MOD44B\", \"band\": \"Percent_Tree_Cover\", \"has_images\": true, \"reducer_hint\": \"mean\"}"
+    },
+    {
+      "call_number": 73,
+      "tool": "preview_comtrade",
+      "input": {
+        "hs_code": "2523",
+        "flow": "M"
+      },
+      "result_preview": "{\"hs_code\": \"2523\", \"flow\": \"M\", \"year\": 2022, \"n_countries\": 158, \"n_observations\": 158, \"sample\": [{\"iso\": \"ABW\", \"year\": 2022, \"value\": 6046731.758}, {\"iso\": \"AGO\", \"year\": 2022, \"value\": 8931395.2"
+    },
+    {
+      "call_number": 74,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "immunization vaccination coverage DPT",
+        "max_results": 6
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 75,
+      "tool": "fetch_gee",
+      "input": {
+        "asset_id": "MODIS/006/MOD44B",
+        "band": "Percent_Tree_Cover",
+        "reducer": "mean"
+      },
+      "result_preview": "{\"variable_id\": \"gee:modis_006_mod44b_percent_tree_cover_mean\", \"n_observations\": 1236, \"n_countries\": 206, \"year_min\": 2015, \"year_max\": 2020}"
+    },
+    {
+      "call_number": 76,
+      "tool": "fetch_comtrade",
+      "input": {
+        "hs_code": "2523",
+        "flow": "M"
+      },
+      "result_preview": "{\"variable_id\": \"comtrade:HS2523_M_usd\", \"n_observations\": 2307, \"n_countries\": 186, \"year_min\": 2010, \"year_max\": 2023}"
+    },
+    {
+      "call_number": 77,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "child undernutrition wasting stunting malnutrition",
+        "max_results": 6
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 78,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "gee:modis_006_mod44b_percent_tree_cover_mean",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.23848971565416194, \"pearson_p\": 1.6214523786032245e-16, \"spearman_rho\": -0.08439668777995085, \"spearman_p\": 0.003958529435214419, \"n_observations\": 1164, \"n_countries\": 194}"
+    },
+    {
+      "call_number": 79,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "comtrade:HS2523_M_usd",
+        "y_variable_id": "epi:UWD"
+      },
+      "result_preview": "{\"pearson_r\": -0.0037760067544116947, \"pearson_p\": 0.8682964341592585, \"spearman_rho\": -0.07768008189998715, \"spearman_p\": 0.0006344098433687658, \"n_observations\": 1931, \"n_countries\": 178}"
+    },
+    {
+      "call_number": 80,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "anemia prevalence children nutrition",
+        "max_results": 6
+      },
+      "result_preview": "[]"
+    }
+  ]
+}

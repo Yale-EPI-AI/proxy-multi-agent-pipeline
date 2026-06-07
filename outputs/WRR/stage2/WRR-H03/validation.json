@@ -3,15 +3,27 @@
   "year_alignment_ok": true,
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
-  "country_coverage_adequate": false,
+  "country_coverage_adequate": true,
   "outlier_concerns": false,
-  "mechanistic_explanation": "Deposit return schemes (DRS) create an economic incentive for consumers to return beverage containers by making the deposit amount retrievable, transforming waste recovery from a voluntary public good into a private rational choice. Higher participation in DRS schemes directly increases container return rates and material recovery, thereby raising the waste recovery rate (WRR). The mechanism is economically sound and empirically documented in specific jurisdictions (NY 72%, Germany >95%).",
+  "mechanistic_explanation": "Energy intensity measures how efficiently an economy converts primary energy into economic output; lower intensity signals post-industrial, service-oriented economies with stronger environmental regulation and waste-recovery infrastructure. Countries with efficient energy use tend to invest in waste-to-energy and recycling systems, raising waste recovery rates (WRR). The mechanism is plausible but modest in strength (r=-0.20), reflecting that energy structure is one of many drivers of waste-recovery outcomes.",
   "issues": [
-    "MAJOR: Hypothesis specifies 'Deposit return scheme participation rates' as the proxy, but the script attempted to substitute World Bank recycling rate indicators (EN.MSW.RCYC.ZS, EN.MSW.INCN.ZS, EN.MSW.TOTL.PC.KG) instead. These are materially different variables—recycling rates are aggregate outcomes, not DRS participation measures. This is a substantial conceptual deviation from the hypothesis.",
-    "MAJOR: The Reloop Platform PDF source specified in the hypothesis could not be machine-parsed, and the script fell back to a literature-only verdict without acquiring the actual proxy data from the stated source. The data_source_authentic check flags this: no country-level DRS participation panel data was obtained from Reloop or any alternative structured source.",
-    "MAJOR: Final result contains n_observations=null and n_countries=null with no statistical test performed. The verdict is 'partially_confirmed' based on literature alone, which means the country_coverage_adequate criterion cannot be evaluated. The merged dataset was reported as having insufficient data (< 20 rows), failing the minimum threshold.",
-    "The script's fallback to literature-only verdict is reasonable given data unavailability, but this represents a significant gap between the hypothesis's proxy specification and what was actually tested.",
-    "Data quality notes acknowledge the substitution and the absence of structured DRS participation data, which is transparent but does not resolve the fundamental mismatch between hypothesis proxy (DRS participation rates) and tested proxy (general recycling rates)."
+    "CRITICAL: Hypothesis specifies 'Energy Intensity of Primary Energy' (wb:EG.EGY.PRIM.PP.KD) as the proxy variable. Result.json shows this proxy was actually tested (431 observations, 134 countries, r=-0.20, p<0.001). However, the verify.py script narrative discusses Deposit Return Scheme (DRS) participation rates and World Bank recycling indicators (EN.MSW.RCYC.ZS, EN.MSW.INCN.ZS, EN.MSW.TOTL.PC.KG) — a completely different hypothesis (WRR-H03 should be energy-related, not DRS-related). The printed output describes the wrong hypothesis entirely, creating a major disconnect between the script narrative and the actual data tested.",
+    "MODERATE: Script narrative mentions 'Reloop Platform 2023 fact sheet' and DRS statistics (NY 72%, Germany >95%), which are irrelevant to energy intensity. The script appears to have been copy-pasted or repurposed from a different hypothesis (likely a DRS hypothesis for a different target). This indicates either a template error or significant copy-paste confusion in the agent's workflow.",
+    "MINOR: Data source metadata in hypothesis specifies WB/IEA collaboration on energy intensity (url ends EG.EGY.PRIM.PP.KD). The script output does not explicitly document that wb:EG.EGY.PRIM.PP.KD was fetched via fetch_world_bank_indicator(), though result.json confirms the correct proxy was used. No documentation in data_quality_notes that this is the correct source.",
+    "MINOR: The functional form test shows quadratic as best fit (AIC=-905.35 vs linear -896.59, log-linear -903.09), but hypothesis specifies 'log-linear' functional form. Result shows quadratic performs marginally better (R²=0.065 vs 0.056 for log-linear), contradicting hypothesis specification without explanation."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": true,
+    "performance_orientation": true,
+    "outcome_focus": false,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 7,
+    "criteria_notes": "Energy intensity (WB/IEA, EG.EGY.PRIM.PP.KD) is a well-established, open-access indicator with global coverage (200 countries, 2000-2022) and recent data. It is relevant to waste recovery infrastructure (indirectly, via economy structure) and distinguishes countries by efficiency. However, it is an input/structural measure, not an environmental outcome — it reflects energy system structure rather than waste-recovery performance. The IEA methodology is peer-reviewed and internationally recognized. Main gap: outcome focus. The correlation is weak (r=-0.20) and partially driven by GDP per capita (partial r=-0.11), limiting its utility as a standalone proxy. For EPI inclusion, this would be a supplementary feature, not a primary indicator."
+  }
 }

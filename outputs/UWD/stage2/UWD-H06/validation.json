@@ -1,18 +1,33 @@
 {
-  "no_synthetic_data": true,
+  "no_synthetic_data": false,
   "year_alignment_ok": true,
-  "hypothesis_interpretation_ok": true,
-  "data_source_authentic": true,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
   "country_coverage_adequate": true,
-  "outlier_concerns": true,
-  "mechanistic_explanation": "JMP-defined improved drinking water access (piped water, protected wells/springs, regulated bottled water) directly measures the availability of treated or naturally protected water sources that reduce pathogen transmission. Countries with higher access to these infrastructure-based water safety measures experience lower rates of waterborne diseases and related mortality/morbidity captured by UWD DALYs, creating a strong negative correlation.",
+  "outlier_concerns": false,
+  "mechanistic_explanation": "The hypothesis proposes that pharmaceutical import intensity (HS 3004 retail medicaments) signals healthcare system capacity and development level, which correlates with water infrastructure investment and thus reduced waterborne disease burden. However, the verification script tested JMP drinking water access (World Bank SH.H2O.BASW.ZS / SH.H2O.SAFE.ZS) instead—a directly measured water access indicator—fundamentally changing the proxy variable from trade data to survey-based water coverage metrics.",
   "issues": [
-    "Partial correlation failed to compute, preventing verification of relationship robustness after controlling for confounders (development level). The script acknowledges this but does not document whether the relationship holds independently of wealth.",
-    "No explicit outlier detection or sensitivity analysis performed. With 4,196 observations and n_countries=194, individual countries or years with extreme values could disproportionately drive the very strong correlation (r=-0.814), especially given the panel structure.",
-    "The hypothesis specifies log-linear functional form, but the script identified quadratic as best (marginally better AIC: 56854.6 vs 57057.6). The discrepancy is not discussed or reconciled.",
-    "Hypothesis explicitly acknowledges non-independence ('partly constructed from same underlying assumptions') and collection-time bias, but the script does not flag this as a concern for the 'confirmed' verdict.",
-    "Year alignment is correct (proxy and target merged on iso-year), but no check for whether the temporal range of available proxy data matches the hypothesis's claimed 1990–2021 period.",
-    "World Bank proxy (SH.H2O.BASW.ZS) is authentic JMP data, but the script uses a fallback indicator (SH.H2O.SAFE.ZS) if the primary one fails. The result does not clearly indicate which was used."
+    "CRITICAL: Hypothesis specifies 'Pharmaceutical imports — retail medicaments (HS 3004, USD)' from UN Comtrade, but verify.py fetches JMP drinking water access from World Bank (SH.H2O.BASW.ZS / SH.H2O.SAFE.ZS). This is a materially different proxy variable—trade data vs. direct water access measurement.",
+    "CRITICAL: Data source mismatch. Hypothesis explicitly names 'UN Comtrade — HS 3004 Retail Medicaments Imports' but verification uses World Bank health/water indicators. The substitution is not documented in data_quality_notes as a necessary fallback.",
+    "The result.json shows correlations (r=-0.21, rho=-0.55) that match the hypothesis's strength_estimate exactly, suggesting the results may be copy-pasted from the hypothesis specification rather than genuinely computed from the substitute proxy. If the script had actually fetched World Bank water data, the correlation values should differ.",
+    "MAJOR: The verify.py script has fallback logic for 'literature_accepted' verdict when World Bank data cannot be retrieved, but the result.json presents a 'partially_confirmed' verdict with statistical results. This indicates either (a) the script never actually ran, or (b) results were fabricated/substituted.",
+    "The data_quality_notes in result.json states 'Proxy coverage: 185 countries, 2010-2023. Target coverage: 198 countries, 1990-2021. Aligned observations: 1929' but does not clarify what proxy was actually used or acknowledge the deviation from the hypothesis.",
+    "The partial correlation after controlling for log(GPC) is very weak (r=-0.069, p=0.0024), suggesting the signal is almost entirely explained by development confounders. This is not flagged as a concern in the summary despite being relevant to the 'signal_independence' criterion.",
+    "No evidence that UN Comtrade API was queried or that HS 3004 trade data was retrieved. The script only attempts World Bank indicators."
   ],
-  "overall_assessment": "minor_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": true,
+    "outcome_focus": true,
+    "documented_methodology": true,
+    "verified_results": null,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "signal_independence": false,
+    "criteria_met": 6,
+    "criteria_notes": "The assessment applies to the ACTUAL proxy tested (JMP water access), not the hypothesis's specified proxy (pharmaceutical imports). JMP water access is directly outcome-focused and has documented WHO/UNICEF methodology, passes coverage/recency criteria. However, it fails relevance to the hypothesis's stated mechanism (pharmaceutical trade intensity as a development proxy). The signal is almost entirely mediated by GDP (partial r drops from -0.21 to -0.07 after controlling for log GPC), indicating negligible independent contribution. If pharmaceutical imports had been actually tested, relevance would be null/false (imports are an indirect development proxy, not a direct water-quality measure), and the documented_methodology would depend on Comtrade's transparency (it is documented as a UN trade database, so true). The 6 criteria met reflect the JMP data's inherent quality, not the hypothesis validation."
+  }
 }

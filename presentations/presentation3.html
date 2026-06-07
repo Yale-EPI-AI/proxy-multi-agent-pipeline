@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPI Proxy Discovery &mdash; Yale Environment Day</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Cytoscape.js for knowledge graph -->
+    <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+
+    <style>
+        /* ===========================================
+           YALE NEW TYPEFACE (@font-face)
+           =========================================== */
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-roman-webfont.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-bold-webfont.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-italic-webfont.woff2') format('woff2');
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YaleNew';
+            src: url('https://yaleux.github.io/yaleui/assets/fonts/yalenew-bolditalic-webfont.woff2') format('woff2');
+            font-weight: 700;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        /* ===========================================
+           CSS CUSTOM PROPERTIES (YALE / EPI ACADEMIC THEME)
+           =========================================== */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f7f5;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f0f0ed;
+            --border: #d4d2cb;
+            --border-light: #e8e6e1;
+
+            --yale-blue: #00356B;
+            --yale-blue-light: #2b5f9e;
+            --yale-blue-faint: rgba(0, 53, 107, 0.06);
+            --epi-green: #2e7d32;
+            --epi-green-light: #4caf50;
+            --epi-green-faint: rgba(46, 125, 50, 0.08);
+            --accent-amber: #bf6900;
+            --accent-amber-faint: rgba(191, 105, 0, 0.08);
+            --accent-red: #c62828;
+            --accent-red-faint: rgba(198, 40, 40, 0.06);
+            --accent-purple: #6a1b9a;
+            --accent-purple-faint: rgba(106, 27, 154, 0.06);
+            --text-primary: #2c2c2c;
+            --text-secondary: #5a5a5a;
+            --text-muted: #8a8a8a;
+
+            --font-display: 'YaleNew', Georgia, serif;
+            --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --title-size: clamp(2rem, 5.5vw, 4rem);
+            --h2-size: clamp(1.6rem, 3.8vw, 2.6rem);
+            --h3-size: clamp(1.2rem, 2.5vw, 1.6rem);
+            --body-size: clamp(1.05rem, 2.2vw, 1.4rem);
+            --small-size: clamp(0.9rem, 1.7vw, 1.2rem);
+            --label-size: clamp(0.7rem, 1.1vw, 0.95rem);
+
+            --slide-padding: clamp(2rem, 5vw, 5rem);
+            --content-gap: clamp(0.75rem, 2vw, 1.5rem);
+            --element-gap: clamp(0.4rem, 1vw, 0.8rem);
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration: 0.7s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            height: 100%;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100%;
+            overflow-x: hidden;
+            font-size: var(--body-size);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===========================================
+           SLIDE CONTAINER
+           =========================================== */
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: var(--slide-padding);
+        }
+        .slide-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-height: 100%;
+            overflow: hidden;
+        }
+
+        /* ===========================================
+           PROGRESS / NAV
+           =========================================== */
+        .progress-bar {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, var(--yale-blue), var(--epi-green));
+            z-index: 1000; transition: width 0.3s ease;
+        }
+        .slide-counter {
+            position: fixed;
+            bottom: clamp(0.75rem, 2vw, 1.5rem);
+            right: clamp(0.75rem, 2vw, 1.5rem);
+            font-family: var(--font-body);
+            font-size: var(--small-size);
+            color: var(--text-muted); z-index: 100;
+            font-weight: 300;
+        }
+        .slide-counter .current { color: var(--yale-blue); font-weight: 600; }
+        .nav-dots {
+            position: fixed; right: clamp(0.5rem, 1vw, 1rem);
+            top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 8px; z-index: 100;
+        }
+        .nav-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--border); cursor: pointer;
+            transition: all 0.3s; border: none; padding: 0;
+        }
+        .nav-dot.active { background: var(--yale-blue); transform: scale(1.3); }
+        .nav-dot:hover { background: var(--yale-blue-light); }
+
+        /* ===========================================
+           TYPOGRAPHY
+           =========================================== */
+        h1 {
+            font-family: var(--font-display);
+            font-size: var(--title-size);
+            font-weight: 600;
+            color: var(--yale-blue);
+            letter-spacing: -0.01em;
+            line-height: 1.15;
+        }
+        h2 {
+            font-family: var(--font-display);
+            font-size: var(--h2-size);
+            font-weight: 600;
+            color: var(--yale-blue);
+            line-height: 1.2;
+            margin-bottom: var(--content-gap);
+        }
+        h3 {
+            font-family: var(--font-body);
+            font-size: var(--h3-size);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .section-label {
+            font-family: var(--font-body);
+            font-size: var(--label-size);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: var(--element-gap);
+            font-weight: 600;
+        }
+
+        /* ===========================================
+           CARDS
+           =========================================== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: clamp(0.8rem, 1.8vw, 1.4rem);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            border-color: var(--yale-blue-light);
+            box-shadow: 0 2px 12px rgba(0,53,107,0.08);
+        }
+        .card-title {
+            font-family: var(--font-body);
+            font-size: var(--body-size);
+            color: var(--yale-blue);
+            font-weight: 600;
+            margin-bottom: 0.3em;
+        }
+        .card-body {
+            font-size: var(--small-size);
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(0.6rem, 1.5vw, 1.2rem); }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.6rem, 1.5vw, 1.2rem); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem, 3vw, 2.5rem); align-items: start; }
+
+        /* ===========================================
+           BULLET LISTS
+           =========================================== */
+        .clean-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: var(--element-gap);
+        }
+        .clean-list li {
+            font-size: var(--body-size);
+            line-height: 1.55;
+            padding-left: 1.4em;
+            position: relative;
+            color: var(--text-primary);
+        }
+        .clean-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.55em;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--yale-blue);
+        }
+
+        /* ===========================================
+           PIPELINE DIAGRAM
+           =========================================== */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.3rem, 0.8vw, 0.6rem);
+            width: 100%;
+            justify-content: center;
+            flex-wrap: nowrap;
+        }
+        .pipe-block {
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: clamp(0.6rem, 1.2vw, 1rem);
+            text-align: center;
+            transition: all 0.4s var(--ease-out-expo);
+            background: var(--bg-primary);
+            position: relative;
+        }
+        .pipe-block .pb-title {
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: var(--small-size);
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .pipe-block .pb-sub {
+            font-size: var(--label-size);
+            color: var(--text-muted);
+            margin-top: 0.15em;
+        }
+        .pipe-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .pipe-join {
+            font-size: var(--label-size);
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        .pipe-arrow {
+            color: var(--text-muted);
+            font-size: clamp(1rem, 2vw, 1.6rem);
+            flex-shrink: 0;
+        }
+        .pipe-stage {
+            border: 2px dashed;
+            border-radius: 12px;
+            padding: clamp(0.5rem, 1vw, 0.8rem);
+            display: flex;
+            align-items: center;
+            gap: clamp(0.2rem, 0.5vw, 0.4rem);
+            position: relative;
+        }
+        .pipe-stage.s1 { border-color: var(--yale-blue-light); }
+        .pipe-stage.s2 { border-color: var(--epi-green); }
+        .pipe-stage-label {
+            position: absolute;
+            top: -0.7em; left: 1em;
+            background: var(--bg-primary);
+            padding: 0 0.5em;
+            font-size: var(--label-size);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .pipe-stage.s1 .pipe-stage-label { color: var(--yale-blue); }
+        .pipe-stage.s2 .pipe-stage-label { color: var(--epi-green); }
+
+        /* ===========================================
+           EXAMPLE BOX
+           =========================================== */
+        .example-box {
+            background: var(--yale-blue-faint);
+            border-left: 4px solid var(--yale-blue);
+            border-radius: 0 8px 8px 0;
+            padding: clamp(0.8rem, 1.5vw, 1.2rem);
+        }
+        .example-box .ex-label {
+            font-size: var(--label-size);
+            font-weight: 700;
+            color: var(--yale-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.4em;
+        }
+        .example-box p {
+            font-size: var(--body-size);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* ===========================================
+           HIGHLIGHT BOX
+           =========================================== */
+        .highlight-box {
+            background: var(--epi-green-faint);
+            border: 1px solid rgba(46,125,50,0.2);
+            border-radius: 8px;
+            padding: clamp(0.6rem, 1.2vw, 1rem);
+        }
+
+        /* ===========================================
+           REPORT EMBED
+           =========================================== */
+        .report-frame {
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+        .report-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* ===========================================
+           TABLE
+           =========================================== */
+        .data-table { width: 100%; border-collapse: collapse; font-size: var(--small-size); }
+        .data-table th {
+            text-align: left;
+            padding: clamp(0.3rem, 0.6vw, 0.5rem) clamp(0.4rem, 0.8vw, 0.7rem);
+            border-bottom: 2px solid var(--yale-blue);
+            color: var(--yale-blue);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .data-table td {
+            padding: clamp(0.3rem, 0.6vw, 0.5rem) clamp(0.4rem, 0.8vw, 0.7rem);
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+        .data-table tr:hover td { background: var(--yale-blue-faint); }
+
+        .data-table-lg { font-size: var(--h3-size); }
+        .data-table-lg th {
+            font-size: var(--body-size);
+            padding: clamp(0.5rem, 1vw, 0.8rem) clamp(0.6rem, 1.2vw, 1rem);
+        }
+        .data-table-lg td {
+            padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.6rem, 1.2vw, 1rem);
+        }
+        .data-table-lg sup {
+            font-size: 0.55em;
+            color: var(--yale-blue);
+            font-weight: 700;
+            vertical-align: super;
+            margin-left: 0.15em;
+        }
+
+        /* ===========================================
+           TITLE SLIDE DECORATION
+           =========================================== */
+        .title-stripe {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--yale-blue) 0%, var(--yale-blue) 60%, var(--epi-green) 60%, var(--epi-green) 100%);
+        }
+        .yale-logo {
+            font-family: var(--font-display);
+            font-size: var(--label-size);
+            color: var(--text-muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .gap-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+            gap: clamp(1.5rem, 4vw, 3.5rem);
+            align-items: center;
+            width: 100%;
+        }
+        .gap-wheel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gap-wheel img {
+            width: 100%;
+            max-width: min(55vh, 480px);
+            height: auto;
+            display: block;
+        }
+        .gap-text { min-width: 0; }
+        .slide-cite {
+            margin-top: var(--content-gap);
+            font-size: clamp(0.55rem, 0.85vw, 0.75rem);
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            border-top: 1px solid var(--border-light);
+            padding-top: 0.5em;
+        }
+        .slide-cite sup { font-style: normal; color: var(--yale-blue); font-weight: 700; }
+        @media (max-width: 900px) {
+            .gap-grid { grid-template-columns: 1fr; }
+            .gap-wheel img { max-width: min(35vh, 320px); }
+        }
+
+        /* ===========================================
+           CYTOSCAPE GRAPH
+           =========================================== */
+        #kg-container {
+            width: 100%;
+            height: min(50vh, 350px);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+        }
+
+        /* ===========================================
+           ANIMATIONS
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity var(--duration) var(--ease-out-expo),
+                        transform var(--duration) var(--ease-out-expo);
+        }
+        .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+        .reveal:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2) { transition-delay: 0.15s; }
+        .reveal:nth-child(3) { transition-delay: 0.25s; }
+        .reveal:nth-child(4) { transition-delay: 0.35s; }
+        .reveal:nth-child(5) { transition-delay: 0.45s; }
+        .reveal:nth-child(6) { transition-delay: 0.55s; }
+
+        /* ===========================================
+           RESPONSIVE
+           =========================================== */
+        @media (max-height: 700px) {
+            :root {
+                --slide-padding: clamp(1.2rem, 3vw, 2.5rem);
+                --content-gap: clamp(0.5rem, 1.5vw, 1rem);
+                --title-size: clamp(1.6rem, 4.5vw, 3rem);
+                --h2-size: clamp(1.2rem, 3vw, 2rem);
+            }
+        }
+        @media (max-height: 600px) {
+            :root {
+                --slide-padding: clamp(0.8rem, 2.5vw, 1.5rem);
+                --content-gap: clamp(0.4rem, 1vw, 0.75rem);
+                --title-size: clamp(1.3rem, 4vw, 2.2rem);
+                --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+            }
+            .slide-counter { display: none; }
+        }
+        @media (max-height: 500px) {
+            :root {
+                --slide-padding: clamp(0.5rem, 2vw, 1rem);
+                --title-size: clamp(1.1rem, 3.5vw, 1.6rem);
+                --h2-size: clamp(0.95rem, 2.5vw, 1.3rem);
+                --body-size: clamp(0.65rem, 1vw, 0.85rem);
+            }
+        }
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .two-col { grid-template-columns: 1fr; }
+            .pipeline { flex-direction: column; }
+            .pipe-arrow { transform: rotate(90deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *,*::before,*::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+            html { scroll-behavior: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<nav class="nav-dots" id="navDots"></nav>
+<div class="slide-counter"><span class="current" id="currentSlide">01</span> / <span id="totalSlides">08</span></div>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 1: TITLE
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-title">
+    <div class="title-stripe"></div>
+    <div class="slide-content" style="align-items:center; text-align:center;">
+        <div class="yale-logo reveal">Yale Environment Day &nbsp;&bull;&nbsp; YCELP &times; ROSE Lab</div>
+        <h1 class="reveal" style="margin-top:0.3em; margin-bottom:0.3em;">Expanding the EPI's Data Horizons</h1>
+        <p class="reveal" style="font-size:var(--h3-size); color:var(--text-secondary); max-width:750px; line-height:1.5;">
+            An AI-powered pipeline to discover new data sources for hard-to-measure environmental indicators
+        </p>
+        <p class="reveal" style="font-size:var(--small-size); color:var(--text-muted); margin-top:var(--content-gap);">Sam Kouteili &nbsp;&bull;&nbsp; 2026</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 2: THE DATA GAP
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-gap">
+    <div class="slide-content">
+        <div class="section-label reveal">The Problem</div>
+        <h2 class="reveal">The EPI Has a Data Problem</h2>
+        <div class="gap-grid">
+            <div class="gap-wheel reveal">
+                <img src="assets/epi_wheel.png" alt="EPI 2024 indicator framework wheel" />
+            </div>
+            <div class="gap-text reveal">
+                <p style="font-size:var(--h3-size); color:var(--text-secondary); margin-bottom:var(--content-gap); line-height:1.5;">
+                    180 countries, 58 indicators &mdash; but for many indicators the data is sparse, stale, or modeled rather than measured.
+                </p>
+                <table class="data-table data-table-lg">
+                    <thead>
+                        <tr><th>Indicator</th><th>Data Gap</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>Waste Recovery Rate</strong></td><td>56 countries imputed <sup>1</sup></td></tr>
+                        <tr><td><strong>Wastewater Reused</strong></td><td>Single year (2015) <sup>2</sup></td></tr>
+                        <tr><td><strong>Pesticide Pollution Risk</strong></td><td>Only 2 time points <sup>3</sup></td></tr>
+                        <tr><td><strong>Forest Landscape Integrity</strong></td><td>Single snapshot (2020) <sup>4</sup></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="reveal slide-cite">
+            <sup>1</sup> 2024 EPI Technical Appendix, pp. 67&ndash;68 &nbsp;&bull;&nbsp;
+            <sup>2</sup> p. 125 &nbsp;&bull;&nbsp;
+            <sup>3</sup> p. 119 &nbsp;&bull;&nbsp;
+            <sup>4</sup> p. 106
+        </p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 3: WHAT IS A DATA PROXY? (COVID example)
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-proxy-intro">
+    <div class="slide-content">
+        <div class="section-label reveal">The Idea</div>
+        <h2 class="reveal">Data Proxies</h2>
+        <p class="reveal" style="font-size:var(--h3-size); color:var(--text-secondary); max-width:1400px; margin-bottom:var(--content-gap); line-height:1.5; white-space:nowrap;">
+            A variable that tracks something we can't easily measure directly &mdash; because the two are causally linked.
+        </p>
+        <div class="reveal" style="max-width:850px; margin: var(--content-gap) auto 0;">
+            <div class="example-box">
+                <div class="ex-label">COVID-19 &amp; Wastewater</div>
+                <p>
+                    During the pandemic, <strong>SARS-CoV-2 concentrations in sewage</strong> predicted infection surges days before clinical testing data &mdash; cheaper, faster, and more comprehensive than individual testing.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 4: THE PIPELINE (full schematic from presentation2)
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-pipeline">
+    <div class="slide-content">
+        <div class="section-label reveal">The Solution</div>
+        <h2 class="reveal">A Knowledge Discovery Pipeline</h2>
+        <p class="reveal" style="color:var(--text-secondary); margin-bottom:var(--content-gap); max-width:1200px;">
+            We give the system an EPI indicator plus curated domain knowledge, and it automatically researches potential proxies, formalizes them as testable hypotheses, and then statistically verifies each one.
+        </p>
+
+        <div class="pipeline reveal" id="pipelineDiagram">
+            <div class="pipe-input">
+                <div class="pipe-block">
+                    <div class="pb-title">EPI Indicator</div>
+                    <div class="pb-sub">e.g. "UWD"</div>
+                </div>
+                <div class="pipe-join">+</div>
+                <div class="pipe-block">
+                    <div class="pb-title">Domain Knowledge</div>
+                    <div class="pb-sub">Technical Appendix</div>
+                </div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-stage s1">
+                <span class="pipe-stage-label">Stage 1: Research</span>
+                <div class="pipe-group research" style="display:flex; align-items:center; gap:clamp(0.2rem,0.5vw,0.4rem); padding:0.35rem 0.45rem; border-radius:10px; border:2px dashed var(--yale-blue-light); background:rgba(255,255,255,0.7);">
+                    <div class="pipe-block">
+                        <div class="pb-title">Deep Research</div>
+                        <div class="pb-sub">Literature &amp; data review</div>
+                    </div>
+                    <div class="pipe-arrow" style="font-size:var(--small-size);">&rarr;</div>
+                    <div class="pipe-block">
+                        <div class="pb-title">Hypothesis Extraction</div>
+                        <div class="pb-sub">Structured output</div>
+                    </div>
+                </div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-stage s2">
+                <span class="pipe-stage-label">Stage 2: Exploration</span>
+                <div class="pipe-group verifiers" style="display:flex; align-items:center; gap:clamp(0.2rem,0.5vw,0.4rem); padding:0.35rem 0.45rem; border-radius:10px; border:2px dashed var(--epi-green); background:rgba(255,255,255,0.7);">
+                    <div class="pipe-block">
+                        <div class="pb-title">Exploration Agent</div>
+                        <div class="pb-sub">Data &amp; statistics</div>
+                    </div>
+                    <div class="pipe-arrow" style="font-size:var(--small-size);">&rarr;</div>
+                    <div class="pipe-block">
+                        <div class="pb-title">Validation Agent</div>
+                        <div class="pb-sub">Quality assurance</div>
+                    </div>
+                </div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-block">
+                <div class="pb-title">Report</div>
+                <div class="pb-sub">Verified proxies</div>
+            </div>
+        </div>
+
+        <div class="reveal" style="margin-top:var(--content-gap);">
+            <div class="example-box" style="max-width:900px; margin:0 auto;">
+                <div class="ex-label">UWD Example</div>
+                <p style="font-size:var(--small-size);">For <strong>Unsafe Drinking Water</strong>: the system researched 8 candidate proxies drawn from traditional surveys, satellite imagery (VIIRS, MODIS), and trade flows &mdash; <strong>pharmaceutical imports</strong> (UN Comtrade, HS&nbsp;3004 retail medicaments) should track water-related illness. Tested across 177 countries (n&nbsp;=&nbsp;1,929), the pipeline found a significant inverse rank correlation (Spearman ρ&nbsp;=&nbsp;&minus;0.55).</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 5: EXAMPLE OUTPUT
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-report">
+    <div class="slide-content" style="gap:var(--element-gap);">
+        <div class="section-label reveal">Example Output</div>
+        <h2 class="reveal" style="margin-bottom:0.3em;">UWD &mdash; Unsafe Drinking Water</h2>
+        <p class="reveal" style="font-size:var(--small-size); color:var(--text-muted); margin-bottom:0.3em;">
+            8 candidate proxies tested &mdash; from satellite imagery and trade flows to traditional surveys. Interactive dashboard auto-generated by the pipeline.
+        </p>
+        <div class="report-frame reveal" style="flex:1; min-height:0;">
+            <iframe id="reportIframe" src="../outputs/UWD/dashboard.html" title="UWD Proxy Discovery Dashboard"></iframe>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 6: KNOWLEDGE GRAPH
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-kg">
+    <div class="slide-content">
+        <div class="section-label reveal">The Bigger Picture</div>
+        <h2 class="reveal">A Knowledge Graph of Proxy Relationships</h2>
+        <div class="two-col">
+            <div class="reveal">
+                <p style="margin-bottom:var(--content-gap);">
+                    We have no ground truth to verify our discoveries against &mdash; but every verified hypothesis populates a <strong>knowledge graph</strong>. Nodes are variables; edges carry direction, strength, and functional form.
+                </p>
+                <p style="margin-bottom:var(--content-gap);">
+                    As the graph grows, the relationships <strong>validate each other</strong>:
+                </p>
+                <ul class="clean-list">
+                    <li><strong>Sign consistency</strong> &mdash; If A&rarr;B is positive and B&rarr;C is positive, A&rarr;C should be too</li>
+                    <li><strong>Confounder detection</strong> &mdash; If an edge disappears after controlling for a third variable, it's spurious</li>
+                    <li><strong>Strength bounds</strong> &mdash; Strong causal chains can't produce near-zero direct links</li>
+                </ul>
+                <p style="font-size:var(--small-size); color:var(--text-muted); margin-top:var(--element-gap);">
+                    <span style="color:var(--epi-green);">Green = positive</span> &nbsp;&bull;&nbsp;
+                    <span style="color:var(--accent-red);">Red = negative</span> &nbsp;&bull;&nbsp;
+                    <span style="color:var(--accent-amber);">Amber dashed = flagged</span>
+                </p>
+            </div>
+            <div class="reveal">
+                <h3 style="font-size:var(--body-size); margin-bottom:0.4em; text-align:center;">Water Cluster Fragment</h3>
+                <div id="kg-container"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 7: ACTUAL KNOWLEDGE GRAPH
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-kg-live">
+    <div class="slide-content" style="gap:var(--element-gap);">
+        <div class="section-label reveal">Live Knowledge Graph</div>
+        <h2 class="reveal" style="margin-bottom:0.3em;">All Verified Proxy Relationships</h2>
+        <p class="reveal" style="font-size:var(--small-size); color:var(--text-muted); margin-bottom:0.3em;">
+            Built automatically from pipeline outputs across all indicators run so far.
+        </p>
+        <div class="report-frame reveal" style="flex:1; min-height:0;">
+            <iframe src="../outputs/knowledge_graph/graph.html" title="EPI Proxy Knowledge Graph"></iframe>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SLIDE 8: END
+     ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-end">
+    <div class="slide-content" style="align-items:center; text-align:center;">
+        <div class="title-stripe" style="position:absolute; bottom:0; top:auto;"></div>
+        <div class="yale-logo reveal">Yale Environment Day &nbsp;&bull;&nbsp; YCELP &times; ROSE Lab</div>
+        <h1 class="reveal" style="font-size:var(--h2-size); margin-top:0.3em;">Thank You</h1>
+        <p class="reveal" style="color:var(--text-secondary); font-size:var(--body-size); margin-top:0.5em; max-width:600px;">
+            Questions &amp; discussion
+        </p>
+        <p class="reveal" style="color:var(--text-muted); font-size:var(--small-size); margin-top:var(--content-gap);">
+            Sam Kouteili &nbsp;&bull;&nbsp; sam.kouteili@yale.edu
+        </p>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════ -->
+<script>
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.totalSlides = this.slides.length;
+        this.currentIndex = 0;
+        document.getElementById('totalSlides').textContent = String(this.totalSlides).padStart(2, '0');
+        this.createNavDots();
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.updateProgress();
+    }
+
+    createNavDots() {
+        const nav = document.getElementById('navDots');
+        this.slides.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('aria-label', `Slide ${i + 1}`);
+            dot.addEventListener('click', () => this.goToSlide(i));
+            nav.appendChild(dot);
+        });
+        this.dots = nav.querySelectorAll('.nav-dot');
+    }
+
+    setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    const index = Array.from(this.slides).indexOf(entry.target);
+                    this.currentIndex = index;
+                    this.updateProgress();
+                    this.updateDots();
+                }
+            });
+        }, { threshold: 0.5 });
+        this.slides.forEach((s) => observer.observe(s));
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                this.goToSlide(Math.min(this.currentIndex + 1, this.totalSlides - 1));
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.goToSlide(Math.max(this.currentIndex - 1, 0));
+            } else if (e.key === 'Home') { e.preventDefault(); this.goToSlide(0); }
+            else if (e.key === 'End') { e.preventDefault(); this.goToSlide(this.totalSlides - 1); }
+        });
+    }
+
+    goToSlide(i) {
+        if (i >= 0 && i < this.totalSlides) this.slides[i].scrollIntoView({ behavior: 'smooth' });
+    }
+
+    updateProgress() {
+        document.getElementById('progressBar').style.width = `${((this.currentIndex + 1) / this.totalSlides) * 100}%`;
+        document.getElementById('currentSlide').textContent = String(this.currentIndex + 1).padStart(2, '0');
+    }
+
+    updateDots() {
+        this.dots.forEach((d, i) => d.classList.toggle('active', i === this.currentIndex));
+    }
+}
+
+/* ===========================================
+   CYTOSCAPE KNOWLEDGE GRAPH
+   =========================================== */
+function initKnowledgeGraph() {
+    const container = document.getElementById('kg-container');
+    if (!container || typeof cytoscape === 'undefined') return;
+
+    const cy = cytoscape({
+        container: container,
+        elements: [
+            { data: { id: 'GPC', label: 'GPC', sub: 'GDP per capita' }, classes: 'control' },
+            { data: { id: 'WWT', label: 'WWT', sub: 'Wastewater treated' }, classes: 'epi' },
+            { data: { id: 'UWD', label: 'UWD', sub: 'Unsafe drinking water' }, classes: 'epi' },
+            { data: { id: 'URB', label: 'URB', sub: 'Urbanization %' }, classes: 'control' },
+            { data: { id: 'HWS', label: 'HWS', sub: 'Handwashing access' }, classes: 'proxy' },
+            { data: { id: 'SAN', label: 'SAN', sub: 'Sanitation services' }, classes: 'proxy' },
+
+            { data: { source: 'GPC', target: 'WWT', label: '+', sign: 'positive' } },
+            { data: { source: 'WWT', target: 'UWD', label: '−', sign: 'negative' } },
+            { data: { source: 'GPC', target: 'URB', label: '+', sign: 'positive' } },
+            { data: { source: 'URB', target: 'WWT', label: '?', sign: 'flagged' } },
+            { data: { source: 'HWS', target: 'UWD', label: '−', sign: 'negative' } },
+            { data: { source: 'SAN', target: 'UWD', label: '−', sign: 'negative' } },
+            { data: { source: 'GPC', target: 'HWS', label: '+', sign: 'positive' } },
+        ],
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'label': 'data(label)',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'font-family': "'Source Sans 3', sans-serif",
+                    'font-size': '14px',
+                    'font-weight': '700',
+                    'width': '65px',
+                    'height': '65px',
+                    'border-width': 2,
+                    'background-color': '#ffffff',
+                }
+            },
+            { selector: 'node.epi', style: { 'border-color': '#00356B', 'color': '#00356B' } },
+            { selector: 'node.control', style: { 'border-color': '#8a8a8a', 'color': '#5a5a5a' } },
+            { selector: 'node.proxy', style: { 'border-color': '#2e7d32', 'color': '#2e7d32' } },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 2.5,
+                    'curve-style': 'bezier',
+                    'target-arrow-shape': 'triangle',
+                    'arrow-scale': 1.2,
+                    'label': 'data(label)',
+                    'font-size': '16px',
+                    'font-weight': '700',
+                    'text-background-color': '#f7f7f5',
+                    'text-background-opacity': 1,
+                    'text-background-padding': '2px',
+                    'font-family': "'Source Sans 3', sans-serif",
+                }
+            },
+            { selector: 'edge[sign="positive"]', style: { 'line-color': '#2e7d32', 'target-arrow-color': '#2e7d32', 'color': '#2e7d32' } },
+            { selector: 'edge[sign="negative"]', style: { 'line-color': '#c62828', 'target-arrow-color': '#c62828', 'color': '#c62828' } },
+            { selector: 'edge[sign="flagged"]', style: { 'line-color': '#bf6900', 'target-arrow-color': '#bf6900', 'color': '#bf6900', 'line-style': 'dashed' } },
+        ],
+        layout: {
+            name: 'cose',
+            animate: false,
+            nodeDimensionsIncludeLabels: true,
+            idealEdgeLength: 120,
+            nodeRepulsion: 8000,
+            gravity: 0.3,
+            padding: 30,
+        },
+        userZoomingEnabled: false,
+        userPanningEnabled: false,
+        boxSelectionEnabled: false,
+        autoungrabify: true,
+    });
+
+    cy.fit(undefined, 20);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    new SlidePresentation();
+    setTimeout(initKnowledgeGraph, 500);
+});
+</script>
+
+</body>
+</html>

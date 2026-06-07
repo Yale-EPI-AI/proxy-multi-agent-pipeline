@@ -4,16 +4,28 @@
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
   "country_coverage_adequate": true,
-  "outlier_concerns": true,
-  "mechanistic_explanation": "The hypothesis proposes that adoption of AI-based optical sorting and robotic systems in Material Recovery Facilities (MRFs) reduces sorting errors and contamination, enabling recovery of marginal material streams and improving overall recovery rates from 85% to 90%. However, the verification script substituted a completely different proxy—medium/high-tech manufacturing share (% of manufacturing value added)—which measures industrial technology sophistication at the country level, not MRF automation adoption. While industrial development may correlate with MRF technology investment, this proxy is conceptually distant from the actual mechanism (facility-level sorting equipment), introducing substantial measurement error and confounding.",
+  "outlier_concerns": false,
+  "mechanistic_explanation": "Fertilizer consumption intensity signals a commercialized agricultural sector with formal supply-chain infrastructure that can be repurposed for waste collection and composting logistics. Higher fertilizer use creates demand for certified compost and digestate as alternative inputs, incentivizing organized organic waste recovery systems (the COM component of WRR). However, the hypothesis about MRF automation and robotics in solid-waste sorting is mechanistically unrelated to agricultural fertilizer intensity, making this a fundamentally misaligned test.",
   "issues": [
-    "CRITICAL: Proxy substitution is not reasonable. Hypothesis specifies 'proportion of MRFs equipped with AI-based optical sorting, robotic systems, or hyperspectral imaging' but script uses 'medium/high-tech manufacturing share (% of manufacturing value added)'. These are fundamentally different variables—one is facility-level equipment adoption in waste management, the other is aggregate manufacturing sector composition. This is not a documented trade-off; it is a material deviation from the hypothesis.",
-    "Data source mismatch: Hypothesis cites specific organization (Resource Recycling) and facility-level data (Ecostar, 130+ facilities). Script uses World Bank manufacturing indicators, which are neither from the specified source nor measure MRF automation. The data_quality_notes acknowledge this but do not justify why the correlation should be interpreted as evidence for the MRF hypothesis.",
-    "Confounding by development level: The strong bivariate correlation (r=0.645, p<0.0001) likely reflects that wealthier, more industrialized countries both (a) have higher manufacturing tech adoption AND (b) have higher waste recovery rates due to overall economic development, not MRF automation specifically. Partial correlation controlling for log(GDP/capita) 'could not be computed (numerical error)', removing the key confound check.",
-    "Outlier influence: With 113 countries and r=0.645 driving verdict to 'confirmed', risk that a few wealthy countries (e.g., Germany, Japan, Netherlands with high both MFT% and WRR) are driving the signal. Script does not visually inspect or flag potential outliers.",
-    "Literature-data mismatch: Resource Recycling article describes facility-level improvements (85%→90%) from Ecostar HDDS across specific facilities—not country-level aggregates. Correlating country-level manufacturing tech % with country-level WRR does not directly test the facility-level claim in the hypothesis.",
-    "Verdict severity: Script issues 'confirmed' verdict based on a substituted proxy with known confounding and failed robustness check (partial correlation error). This overstates confidence given the severe proxy substitution.",
-    "No attempt to source authentic data: Script searches World Bank but does not attempt to locate actual MRF automation data (e.g., from IFR robot density, Ecostar facility lists, or industry surveys), despite the hypothesis providing specific facility count (130+ Ecostar facilities) suggesting such data might exist."
+    "CRITICAL: Hypothesis specifies MRF (Materials Recovery Facility) automation/robotics adoption as the proxy variable. The actual test used World Bank fertilizer consumption (AG.CON.FERT.ZS) — a completely different domain (agriculture vs. solid waste recycling). This is not a reasonable substitution but a material departure from the hypothesis.",
+    "Data source mismatch: Hypothesis claims proxy should measure 'proportion of MRFs with AI/robotic sorting' from the waste/recycling sector. Actual proxy is fertilizer use intensity from the agricultural sector via World Bank. No documentation in data_quality_notes explains this radical domain shift or justifies it as acceptable.",
+    "Hypothesis interpretation failure: The mechanistic narrative in the hypothesis connects fertilizer supply-chain infrastructure to waste-recovery logistics. The verify.py script and result.json show no connection between this mechanism and the actual fertilizer-WRR correlation tested. The partial correlation controlling for log(GPC) shows r=-0.058 (near zero, p=0.24), suggesting the raw Pearson r=0.128 is entirely driven by GDP confounding, not the proposed mechanism.",
+    "Weak bivariate signal: Pearson r=0.128 (p=0.009) is statistically significant but extremely weak. Spearman rho=0.311 is notably stronger, suggesting non-linearity or outlier sensitivity rather than a robust linear relationship. The log-linear functional form (R²=0.115) explains only 11.5% of variance.",
+    "Confounding invalidates the proxy: The partial correlation (r=-0.058, p=0.236, not significant) shows the relationship vanishes when controlling for GDP per capita. This indicates the fertilizer-WRR correlation is entirely confounded by development level, not a causal relationship between fertilizer infrastructure and waste recovery capacity.",
+    "No mechanistic plausibility for the actual test: The hypothesis's causal narrative (fertilizer supply chains → compost programs → WRR) is plausible in principle, but is neither tested nor validated by the results. The weak partial correlation contradicts the proposed mechanism."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": null,
+    "outcome_focus": true,
+    "established_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 6,
+    "criteria_notes": "Fertilizer consumption data itself meets 6 EPI criteria (outcome-focused, established WB/FAO methodology, verified, 131 countries in merged set, 1990-2023 temporal span, recent, open access). However, it fails the critical relevance criterion: fertilizer use intensity has no direct causal or structural connection to municipal solid waste recovery rates or MRF automation adoption. The hypothesis specifies solid-waste recycling infrastructure (MRF robotics) but tests agricultural input intensity. This is a domain mismatch, not a reasonable proxy substitution."
+  }
 }

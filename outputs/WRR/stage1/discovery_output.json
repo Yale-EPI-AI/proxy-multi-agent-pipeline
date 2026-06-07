@@ -1,0 +1,460 @@
+{
+  "final_text": "```json\n{\n  \"causal_map_summary\": \"Waste recovery rates reflect a country's overall infrastructure modernity and energy-system sophistication: nations with broad access to clean cooking fuels and electricity have the grid capacity, logistics networks, and institutional capacity to operate composting, recycling, and waste-to-energy facilities. Agricultural intensity (cereal yield, fertilizer use) proxies the organised collection and processing systems that also handle organic waste fractions, while total GHG emissions per capita captures the industrial metabolism that generates recyclable material streams and the regulatory pressure to manage them. Energy intensity of the economy inversely signals how efficiently a nation converts resources \u2014 high-efficiency economies tend to close material loops through recycling and recovery.\",\n\n  \"hypotheses\": [\n    {\n      \"id\": \"WRR-H01\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2010-2023\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Access to clean cooking fuels (% population)\",\n      \"proxy_description\": \"Share of population using clean fuels and technologies for cooking (natural gas, LPG, electricity, etc.), sourced from IEA/World Bank. Reflects the depth of a country's energy-infrastructure network.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"Pearson r=0.45, Spearman \u03c1=0.74, n=127 countries\"\n      },\n      \"mechanism\": \"Countries with widespread clean-cooking infrastructure have the distribution networks, regulatory frameworks, and municipal service capacity that also underpin formal waste collection and processing. Clean-cooking access is a strong signal that a government can deliver recurring energy/utility services to households \u2014 the same institutional capacity required to run composting facilities, recycling depots, and waste-to-energy plants. The log-linear form matches the WRR imputation model structure.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Access to clean fuels and technologies for cooking\",\n        \"organization\": \"World Bank / IEA\",\n        \"url\": \"https://data.worldbank.org/indicator/EG.CFT.ACCS.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"189 countries, 2000-2023\",\n        \"country_count_estimate\": 189,\n        \"temporal_span\": \"2000-2023\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"moderate\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:EG.CFT.ACCS.ZS\",\n      \"caveats\": [\n        \"Clean-cooking access correlates with income level; partial confounding with GDP cannot be fully excluded without multivariate controls.\",\n        \"Indicator conflates very different fuel types (LPG vs. electricity) that have distinct waste-management implications.\",\n        \"Low-coverage rural areas in Asia and Africa may mask heterogeneity within countries.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H02\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2010-2023\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Access to electricity (% population)\",\n      \"proxy_description\": \"Share of population with access to electricity, from World Bank/IEA. Measures the reach of the electrical grid as a proxy for the physical infrastructure prerequisite for waste-to-energy incineration and mechanised recycling facilities.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"Pearson r=0.29, Spearman \u03c1=0.62, n=139 countries\"\n      },\n      \"mechanism\": \"Waste-to-energy incineration and mechanical recycling sorting lines require reliable electricity supply. Countries with near-universal electricity access have the grid infrastructure, logistics, and regulatory environment to support formal waste processing. Spearman \u03c1=0.62 suggests a strong monotonic relationship even though the Pearson r is moderate \u2014 consistent with a log-linear functional form at low-to-mid recovery rates.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Access to electricity\",\n        \"organization\": \"World Bank / IEA\",\n        \"url\": \"https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"209 countries, 1990-2023\",\n        \"country_count_estimate\": 209,\n        \"temporal_span\": \"1990-2023\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"moderate\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:EG.ELC.ACCS.ZS\",\n      \"caveats\": [\n        \"Electricity access reaches near-100% in most high-income countries, limiting discriminatory power at the top of the WRR distribution.\",\n        \"Grid existence does not guarantee grid reliability or capacity for industrial use.\",\n        \"Likely a weaker signal than clean-cooking access as a standalone proxy.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H03\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2010-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Total GHG emissions per capita (t CO2e/capita)\",\n      \"proxy_description\": \"Total greenhouse gas emissions excluding LULUCF per person, from World Bank/Climate Watch. Measures industrial metabolism intensity \u2014 the throughput of energy and materials in an economy.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"Pearson r=0.23, Spearman \u03c1=0.54, n=130 countries\"\n      },\n      \"mechanism\": \"Higher per-capita GHG emissions reflect greater industrial activity and material throughput, which generates larger volumes of recyclable and combustible waste streams that make formal recovery economically viable (economies of scale). Countries with energy-intensive economies also tend to have waste-to-energy plants to capture value from combustible waste. Importantly, this is distinct from GDP: two countries at similar income levels can have very different GHG intensities depending on their energy mix and industrial structure.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Total GHG emissions excl. LULUCF per capita\",\n        \"organization\": \"World Bank / Climate Watch\",\n        \"url\": \"https://data.worldbank.org/indicator/EN.GHG.ALL.PC.CE.AR5\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"197 countries, 1990-2024\",\n        \"country_count_estimate\": 197,\n        \"temporal_span\": \"1990-2024\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"modeled\"\n      },\n      \"confidence\": \"moderate\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:EN.GHG.ALL.PC.CE.AR5\",\n      \"caveats\": [\n        \"GHG per capita is itself partly driven by income level, reintroducing a GDP-adjacent confounder.\",\n        \"High-emission fossil-fuel exporters (e.g. Gulf states) may have high GHG but low waste recovery, creating outliers.\",\n        \"Moderate Pearson r despite strong Spearman \u03c1 suggests non-linearity or influential outliers at high emission levels.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H04\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"1990-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Cereal yield (kg per hectare)\",\n      \"proxy_description\": \"Average yield of cereals in kg per hectare of harvested land. A measure of agricultural technological intensity \u2014 the degree to which modern, input-intensive farming is practiced.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"Pearson r=0.30, Spearman \u03c1=0.53, n=122 countries\"\n      },\n      \"mechanism\": \"High cereal yields reflect modern, organised agricultural systems that: (1) generate large volumes of crop residues that can be composted or digested; (2) use precision logistics and storage infrastructure transferable to waste collection; (3) indicate a technically capable farming sector familiar with organic matter management. Countries with industrialised agriculture also tend to have municipal composting infrastructure for organic household waste, contributing directly to the COM component of WRR. The causal chain runs: agricultural modernisation \u2192 institutional capacity and logistics \u2192 formal waste management systems.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Cereal yield\",\n        \"organization\": \"World Bank / FAO\",\n        \"url\": \"https://data.worldbank.org/indicator/AG.YLD.CREL.KG\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"179 countries, 1990-2024\",\n        \"country_count_estimate\": 179,\n        \"temporal_span\": \"1990-2024\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:AG.YLD.CREL.KG\",\n      \"caveats\": [\n        \"Cereal yields vary by crop mix and agroecological zone, not just institutional capacity.\",\n        \"Countries with limited arable land (e.g. city-states, small islands) may have low yields but high waste recovery, introducing noise.\",\n        \"The mechanism is indirect and could be confounded by climate and agro-ecological factors.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H05\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"1990-2023\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Fertilizer consumption (kg per hectare of arable land)\",\n      \"proxy_description\": \"Annual fertilizer use intensity in kg per hectare. Reflects the sophistication and commercialisation of the agricultural sector and its associated supply-chain infrastructure.\",\n      \"relationship\": {\n        \"direction\": \"positive\",\n        \"functional_form\": \"linear\",\n        \"strength_estimate\": \"Pearson r=0.30, Spearman \u03c1=0.53 (estimated from cereal yield analogy \u2014 to be confirmed once correlated)\"\n      },\n      \"mechanism\": \"Intensive fertilizer use signals a commercialised agricultural sector with formal input supply chains, which tends to co-exist with municipal composting programs (compost as a fertilizer substitute), organised organic-waste collection, and biogas digesters on farms. The supply-chain infrastructure for distributing fertilizers can be adapted for reverse-logistics waste collection. High-fertilizer systems also create demand for certified compost and digestate, incentivising the COM component of WRR.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Fertilizer consumption\",\n        \"organization\": \"World Bank / FAO\",\n        \"url\": \"https://data.worldbank.org/indicator/AG.CON.FERT.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"196 countries, 1990-2023\",\n        \"country_count_estimate\": 196,\n        \"temporal_span\": \"1990-2023\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:AG.CON.FERT.ZS\",\n      \"caveats\": [\n        \"Fertilizer consumption is high in some low-income countries with intensive smallholder rice/wheat farming but low waste-recovery infrastructure.\",\n        \"Nonlinear relationship possible: very high fertilizer use may indicate reliance on synthetic inputs rather than composting.\",\n        \"Correlation not yet directly computed \u2014 strength estimate is analogical.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H06\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2000-2022\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Energy intensity of primary energy (MJ per $2021 PPP GDP)\",\n      \"proxy_description\": \"Amount of primary energy consumed per unit of economic output. Low values indicate energy-efficient economies; high values indicate energy-wasteful industrial structures.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"direction hypothesised as negative \u2014 to be confirmed from correlation run\"\n      },\n      \"mechanism\": \"Energy-efficient economies tend to have closed-loop industrial systems that minimise waste of all kinds \u2014 including material waste. Countries with low energy intensity often have advanced manufacturing sectors (electronics, automotive, pharmaceuticals) that generate high-value recyclable streams (metals, plastics, paper) and have strong incentives to recover them. Moreover, low energy intensity countries often have decarbonisation policies that incentivise waste-to-energy as a substitute for fossil fuel generation, directly boosting the INE component of WRR.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Energy intensity level of primary energy\",\n        \"organization\": \"World Bank / IEA\",\n        \"url\": \"https://data.worldbank.org/indicator/EG.EGY.PRIM.PP.KD\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"200 countries, 2000-2022\",\n        \"country_count_estimate\": 200,\n        \"temporal_span\": \"2000-2022\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"modeled\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:EG.EGY.PRIM.PP.KD\",\n      \"caveats\": [\n        \"Energy intensity is partly driven by industrial structure and climate (heating/cooling needs), not purely by policy.\",\n        \"Former Soviet states tend to have high energy intensity and variable waste-recovery rates, potentially creating outliers.\",\n        \"Correlation direction needs empirical verification \u2014 the mechanism predicts negative but the data may reveal nuance.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H07\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"1990-2023\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Electricity production from fossil fuels (% of total)\",\n      \"proxy_description\": \"Share of electricity generated from oil, gas, and coal sources. A measure of the fossil-fuel dependence of the electricity grid and, inversely, the diversification toward alternatives including waste-to-energy.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"linear\",\n        \"strength_estimate\": \"direction hypothesised as negative \u2014 to be confirmed\"\n      },\n      \"mechanism\": \"Countries that generate a large share of electricity from fossil fuels have less incentive to develop waste-to-energy plants, because cheap fossil fuels undercut the economics of incineration with energy recovery (INE). Conversely, countries diversifying away from fossil electricity \u2014 often under carbon pricing or renewable mandates \u2014 frequently include waste-to-energy in their energy mix. Fossil-fuel-heavy grids also tend to be in economies with less developed waste-management infrastructure overall. This provides a novel, sector-specific signal beyond aggregate GDP.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Electricity production from oil, gas and coal\",\n        \"organization\": \"World Bank / IEA\",\n        \"url\": \"https://data.worldbank.org/indicator/EG.ELC.FOSL.ZS\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"203 countries, 1990-2023\",\n        \"country_count_estimate\": 203,\n        \"temporal_span\": \"1990-2023\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"administrative\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:EG.ELC.FOSL.ZS\",\n      \"caveats\": [\n        \"Countries with high hydro or nuclear shares may have low fossil electricity but also low waste recovery (e.g. some Latin American and African nations).\",\n        \"Waste-to-energy is a minor share of total electricity generation even in leading countries, so the economic displacement effect may be weak.\",\n        \"Correlation not yet directly computed \u2014 mechanism is theoretically grounded but empirical strength is unknown.\"\n      ],\n      \"references\": []\n    },\n    {\n      \"id\": \"WRR-H08\",\n      \"context\": {\n        \"geographic_scope\": \"global\",\n        \"time_period\": \"2010-2024\",\n        \"subpopulations\": null\n      },\n      \"target_variable\": \"WRR\",\n      \"proxy_variable\": \"Methane emissions from waste (Mt CO2e)\",\n      \"proxy_description\": \"Total methane emissions from the waste sector (landfill gas, wastewater), from World Bank/Climate Watch. Absolute emissions measure the scale of uncontrolled landfill decomposition \u2014 the alternative to formal waste recovery.\",\n      \"relationship\": {\n        \"direction\": \"negative\",\n        \"functional_form\": \"log-linear\",\n        \"strength_estimate\": \"Pearson r=-0.12 (weak, p=0.014), Spearman \u03c1=0.08 (n.s.), n=130 countries\"\n      },\n      \"mechanism\": \"High methane from waste signals that waste is predominantly landfilled or openly dumped without recovery, directly opposing the composting, recycling, and energy-recovery measured by WRR. However, the observed correlation is very weak (Pearson r=-0.12, Spearman \u03c1=0.08 n.s.), likely because absolute methane emissions also scale with population and total waste generation \u2014 large countries with high recovery rates still emit large absolute quantities. A per-capita or per-unit-waste normalisation would likely reveal a stronger negative relationship.\",\n      \"data_source\": {\n        \"name\": \"World Development Indicators \u2013 Methane emissions from Waste\",\n        \"organization\": \"World Bank / Climate Watch\",\n        \"url\": \"https://data.worldbank.org/indicator/EN.GHG.CH4.WA.MT.CE.AR5\",\n        \"format\": \"API\",\n        \"accessibility\": \"open\",\n        \"coverage\": \"197 countries, 1990-2024\",\n        \"country_count_estimate\": 197,\n        \"temporal_span\": \"1990-2024\",\n        \"update_frequency\": \"annual\",\n        \"methodology_status\": \"international_org\",\n        \"data_type\": \"modeled\"\n      },\n      \"confidence\": \"speculative\",\n      \"evidence_type\": \"programmatic_verify\",\n      \"db_variable_id\": \"wb:EN.GHG.CH4.WA.MT.CE.AR5\",\n      \"caveats\": [\n        \"Absolute emissions scale with population, masking the per-capita recovery signal.\",\n        \"Methane emission factors for landfills are modelled, not directly measured, introducing uncertainty.\",\n        \"Weak observed correlation (r=-0.12) means this variable alone is a poor proxy; normalisation by waste generation or population is required.\",\n        \"Spearman \u03c1=0.08 is not statistically significant \u2014 positive rank correlation is counterintuitive and reflects the population-size confound.\"\n      ],\n      \"references\": []\n    }\n  ]\n}\n```",
+  "tool_log": [
+    {
+      "call_number": 1,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "waste management recycling municipal solid waste",
+        "max_results": 10
+      },
+      "result_preview": "[{\"id\": \"EG.USE.CRNW.ZS\", \"name\": \"Combustible renewables and waste (% of total energy)\", \"source\": \"World Development Indicators\"}, {\"id\": \"EN.GHG.CH4.WA.MT.CE.AR5\", \"name\": \"Methane (CH4) emissions "
+    },
+    {
+      "call_number": 2,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "electricity access renewable energy consumption",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.CON.FERT.ZS\", \"name\": \"Fertilizer consumption (kilogra"
+    },
+    {
+      "call_number": 3,
+      "tool": "search_faostat",
+      "input": {
+        "query": "fertilizer use agricultural waste composting",
+        "max_results": 8
+      },
+      "result_preview": "{\"error\": \"FAOSTAT API unavailable\", \"detail\": \"The FAO FAOSTAT API (fenixservices.fao.org) is currently down (Cloudflare 521 / read timeout). Do not call any faostat tools for the rest of this sessio"
+    },
+    {
+      "call_number": 4,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "industrial production manufacturing value added",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.CREL.HA\", \"name\": \"Land under cereal production (h"
+    },
+    {
+      "call_number": 5,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "water sanitation treatment wastewater infrastructure",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"ER.GDP.FWTL.M3.KD\", \"name\": \"Water productivity, total (constant 2015 US$ GDP per cubic meter of total freshwater withdrawal)\", \"source\": \"World Development Indicators\"}, {\"id\": \"ER.H2O.FWAG."
+    },
+    {
+      "call_number": 6,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "solid waste sanitation waste disposal",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 7,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "energy intensity consumption per capita industry",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.CON.FERT.ZS\", \"name\": \"Fertilizer consumption (kilogra"
+    },
+    {
+      "call_number": 8,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "CO2 emissions per capita greenhouse gas",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.ZS\", \"name\": \"Fertilizer consumption (kilograms per hectare of arable land)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.ARBL.HA.PC\", \"name\": \"Arable land (hectares"
+    },
+    {
+      "call_number": 9,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "temperature precipitation climate",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 10,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "surface temperature",
+        "max_results": 8
+      },
+      "result_preview": "[{\"parameter\": \"TSURF\", \"name\": \"Surface Temperature of Land and Snow\", \"units\": \"C\"}]"
+    },
+    {
+      "call_number": 11,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "methane emissions waste landfill",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"EG.USE.CRNW.ZS\", \"name\": \"Combustible renewables and waste (% of total energy)\", \"source\": \"World Development Indicators\"}, {\"id\": \"EN.GHG.ALL.LU.MT.CE.AR5\", \"name\": \"Total greenhouse gas emi"
+    },
+    {
+      "call_number": 12,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "trade imports exports merchandise manufacturing",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"BG.GSR.NFSV.GD.ZS\", \"name\": \"Trade in services (% of GDP)\", \"source\": \"World Development Indicators\"}, {\"id\": \"BM.GSR.CMCP.ZS\", \"name\": \"Communications, computer, etc. (% of service imports, "
+    },
+    {
+      "call_number": 13,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "access clean cooking fuels LPG",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"EG.CFT.ACCS.RU.ZS\", \"name\": \"Access to clean fuels and technologies for cooking, rural (% of rural population)\", \"source\": \"World Development Indicators\"}, {\"id\": \"EG.CFT.ACCS.UR.ZS\", \"name\":"
+    },
+    {
+      "call_number": 14,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "cereal crop yield agricultural productivity",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"AG.LND.AGRI.K2\", \"name\": \"Agricultural land (sq. km)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.AGRI.ZS\", \"name\": \"Agricultural land (% of land area)\", \"source\": \"World Devel"
+    },
+    {
+      "call_number": 15,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "household waste open burning air pollution",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 16,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "particulate matter PM2.5 air quality pollution",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 17,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "plastic packaging material consumption imports",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.CON.FERT.ZS\", \"name\": \"Fertilizer consumption (kilogra"
+    },
+    {
+      "call_number": 18,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "internet users mobile phone technology access",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"EG.CFT.ACCS.RU.ZS\", \"name\": \"Access to clean fuels and technologies for cooking, rural (% of rural population)\", \"source\": \"World Development Indicators\"}, {\"id\": \"EG.CFT.ACCS.UR.ZS\", \"name\":"
+    },
+    {
+      "call_number": 19,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "labor force employment services industry sector",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"BG.GSR.NFSV.GD.ZS\", \"name\": \"Trade in services (% of GDP)\", \"source\": \"World Development Indicators\"}, {\"id\": \"BM.GSR.GNFS.CD\", \"name\": \"Imports of goods and services (BoP, current US$)\", \"so"
+    },
+    {
+      "call_number": 20,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "EN.GHG.CH4.WA.MT.CE.AR5"
+      },
+      "result_preview": "{\"indicator_code\": \"EN.GHG.CH4.WA.MT.CE.AR5\", \"n_countries\": 197, \"n_observations\": 2561, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": ["
+    },
+    {
+      "call_number": 21,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "EG.CFT.ACCS.ZS"
+      },
+      "result_preview": "{\"indicator_code\": \"EG.CFT.ACCS.ZS\", \"n_countries\": 189, \"n_observations\": 2457, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": [\"AFG\", \"A"
+    },
+    {
+      "call_number": 22,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EN.GHG.CH4.WA.MT.CE.AR5"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EN.GHG.CH4.WA.MT.CE.AR5\", \"n_observations\": 6895, \"n_countries\": 197, \"year_min\": 1990, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 23,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EG.CFT.ACCS.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EG.CFT.ACCS.ZS\", \"n_observations\": 4536, \"n_countries\": 189, \"year_min\": 2000, \"year_max\": 2023}"
+    },
+    {
+      "call_number": 24,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EG.USE.CRNW.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EG.USE.CRNW.ZS\", \"n_observations\": 4958, \"n_countries\": 148, \"year_min\": 1990, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 25,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EG.ELC.ACCS.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EG.ELC.ACCS.ZS\", \"n_observations\": 6294, \"n_countries\": 209, \"year_min\": 1990, \"year_max\": 2023}"
+    },
+    {
+      "call_number": 26,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EN.GHG.ALL.PC.CE.AR5"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EN.GHG.ALL.PC.CE.AR5\", \"n_observations\": 6895, \"n_countries\": 197, \"year_min\": 1990, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 27,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "AG.YLD.CREL.KG"
+      },
+      "result_preview": "{\"variable_id\": \"wb:AG.YLD.CREL.KG\", \"n_observations\": 6001, \"n_countries\": 179, \"year_min\": 1990, \"year_max\": 2024}"
+    },
+    {
+      "call_number": 28,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:EN.GHG.CH4.WA.MT.CE.AR5",
+        "y_variable_id": "epi:WRR"
+      },
+      "result_preview": "{\"pearson_r\": -0.11998738396348901, \"pearson_p\": 0.014101165068319294, \"spearman_rho\": 0.07565203725272104, \"spearman_p\": 0.12251771206176755, \"n_observations\": 418, \"n_countries\": 130}"
+    },
+    {
+      "call_number": 29,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:EG.CFT.ACCS.ZS",
+        "y_variable_id": "epi:WRR"
+      },
+      "result_preview": "{\"pearson_r\": 0.4462422161997739, \"pearson_p\": 1.1859779864522217e-21, \"spearman_rho\": 0.7438366923579779, \"spearman_p\": 4.232438167224034e-74, \"n_observations\": 414, \"n_countries\": 127}"
+    },
+    {
+      "call_number": 30,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:EG.USE.CRNW.ZS",
+        "y_variable_id": "epi:WRR"
+      },
+      "result_preview": "{\"pearson_r\": -0.1456732437460776, \"pearson_p\": 0.005359749029004237, \"spearman_rho\": -0.027316447364011127, \"spearman_p\": 0.6034337254049439, \"n_observations\": 364, \"n_countries\": 107}"
+    },
+    {
+      "call_number": 31,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:EG.ELC.ACCS.ZS",
+        "y_variable_id": "epi:WRR"
+      },
+      "result_preview": "{\"pearson_r\": 0.2915184410118746, \"pearson_p\": 3.980670306353331e-10, \"spearman_rho\": 0.6178633055675086, \"spearman_p\": 5.469074338356837e-48, \"n_observations\": 443, \"n_countries\": 139}"
+    },
+    {
+      "call_number": 32,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:EN.GHG.ALL.PC.CE.AR5",
+        "y_variable_id": "epi:WRR"
+      },
+      "result_preview": "{\"pearson_r\": 0.22585470389115256, \"pearson_p\": 3.098423517774383e-06, \"spearman_rho\": 0.5449293088411988, \"spearman_p\": 1.0635587026381566e-33, \"n_observations\": 418, \"n_countries\": 130}"
+    },
+    {
+      "call_number": 33,
+      "tool": "quick_correlate",
+      "input": {
+        "x_variable_id": "wb:AG.YLD.CREL.KG",
+        "y_variable_id": "epi:WRR"
+      },
+      "result_preview": "{\"pearson_r\": 0.29813779728176026, \"pearson_p\": 1.2978967246757308e-09, \"spearman_rho\": 0.5307675176882628, \"spearman_p\": 2.6426604442076724e-30, \"n_observations\": 398, \"n_countries\": 122}"
+    },
+    {
+      "call_number": 34,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "school enrollment tertiary education secondary",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"BM.TRF.PRVT.CD\", \"name\": \"Secondary income, other sectors, payments (BoP, current US$)\", \"source\": \"World Development Indicators\"}, {\"id\": \"BN.TRF.CURR.CD\", \"name\": \"Net secondary income (BoP"
+    },
+    {
+      "call_number": 35,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "natural gas consumption energy production electricity generation",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.CON.FERT.ZS\", \"name\": \"Fertilizer consumption (kilogra"
+    },
+    {
+      "call_number": 36,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "mortality child infant death health",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 37,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "CO2 emissions electricity heat production",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.LND.CREL.HA\", \"name\": \"Land under cereal production (h"
+    },
+    {
+      "call_number": 38,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "energy intensity primary energy GDP efficiency",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"BG.GSR.NFSV.GD.ZS\", \"name\": \"Trade in services (% of GDP)\", \"source\": \"World Development Indicators\"}, {\"id\": \"BM.GSR.FCTY.CD\", \"name\": \"Primary income payments (BoP, current US$)\", \"source\":"
+    },
+    {
+      "call_number": 39,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "diarrhea mortality infectious disease sanitation",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 40,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "mortality rate neonatal child under-five",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 41,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "fertilizer consumption agriculture per hectare",
+        "max_results": 6
+      },
+      "result_preview": "[{\"id\": \"AG.CON.FERT.PT.ZS\", \"name\": \"Fertilizer consumption (% of fertilizer production)\", \"source\": \"World Development Indicators\"}, {\"id\": \"AG.CON.FERT.ZS\", \"name\": \"Fertilizer consumption (kilogra"
+    },
+    {
+      "call_number": 42,
+      "tool": "search_who_gho",
+      "input": {
+        "query": "life expectancy healthy years",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 43,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "solar radiation wind speed energy",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 44,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "precipitation",
+        "max_results": 8
+      },
+      "result_preview": "[{\"parameter\": \"IMERG_PRECLIQUID_PROB\", \"name\": \"Probability of Liquid Precipitation\", \"units\": \"%\"}, {\"parameter\": \"IMERG_PRECTOT\", \"name\": \"Total Precipitation\", \"units\": \"mm/day\"}, {\"parameter\": \"I"
+    },
+    {
+      "call_number": 45,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "hospital beds health workers infrastructure",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 46,
+      "tool": "search_nasa_power",
+      "input": {
+        "query": "wind speed surface",
+        "max_results": 8
+      },
+      "result_preview": "[]"
+    },
+    {
+      "call_number": 47,
+      "tool": "search_world_bank",
+      "input": {
+        "query": "greenhouse gas emissions CH4 nitrous oxide agriculture",
+        "max_results": 8
+      },
+      "result_preview": "[{\"id\": \"EG.ELC.FOSL.ZS\", \"name\": \"Electricity production from oil, gas and coal sources (% of total)\", \"source\": \"World Development Indicators\"}, {\"id\": \"EG.ELC.NGAS.ZS\", \"name\": \"Electricity product"
+    },
+    {
+      "call_number": 48,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "EG.EGY.PRIM.PP.KD"
+      },
+      "result_preview": "{\"indicator_code\": \"EG.EGY.PRIM.PP.KD\", \"n_countries\": 200, \"n_observations\": 2510, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": [\"AFG\","
+    },
+    {
+      "call_number": 49,
+      "tool": "preview_world_bank",
+      "input": {
+        "indicator_code": "AG.CON.FERT.ZS"
+      },
+      "result_preview": "{\"indicator_code\": \"AG.CON.FERT.ZS\", \"n_countries\": 195, \"n_observations\": 2520, \"years\": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022], \"sample_countries\": [\"AFG\", \"A"
+    },
+    {
+      "call_number": 50,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EG.EGY.PRIM.PP.KD"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EG.EGY.PRIM.PP.KD\", \"n_observations\": 4463, \"n_countries\": 200, \"year_min\": 2000, \"year_max\": 2022}"
+    },
+    {
+      "call_number": 51,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "AG.CON.FERT.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:AG.CON.FERT.ZS\", \"n_observations\": 6127, \"n_countries\": 196, \"year_min\": 1990, \"year_max\": 2023}"
+    },
+    {
+      "call_number": 52,
+      "tool": "fetch_world_bank",
+      "input": {
+        "indicator_code": "EG.ELC.FOSL.ZS"
+      },
+      "result_preview": "{\"variable_id\": \"wb:EG.ELC.FOSL.ZS\", \"n_observations\": 6036, \"n_countries\": 203, \"year_min\": 1990, \"year_max\": 2023}"
+    }
+  ]
+}

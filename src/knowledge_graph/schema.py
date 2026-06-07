@@ -104,7 +104,7 @@ class InferredCandidateEdge(EdgeData):
 
 class Inference(BaseModel):
     """Result from the reasoning engine — an inferred edge or warning."""
-    inference_type: str  # "cross_candidate", "direction_conflict", etc.
+    inference_type: str  # "cross_candidate", "direction_mismatch", "verdict_conflict", etc.
     source: str = ""
     target: str = ""
     edge: Optional[InferredCandidateEdge] = None

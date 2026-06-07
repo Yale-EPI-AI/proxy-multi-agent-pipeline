@@ -96,7 +96,7 @@ def run_partial_correlation(
 
     return PartialCorrelationResult(
         partial_r=float(result["r"].iloc[0]),
-        partial_p=float(result["p-val"].iloc[0]),
+        partial_p=float(result["p_val"].iloc[0] if "p_val" in result.columns else result["p-val"].iloc[0]),
         control_variables=list(covar_cols),
     )
 

@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt
 
-from src.config import OUTPUTS_DIR, API_RETRY_ATTEMPTS, API_RETRY_BACKOFF, INCLUSION_BINDING_MODE, MAX_HYPOTHESES
+from src.config import OUTPUTS_DIR, DISCOVERY_MAX_TOOL_CALLS, MAX_HYPOTHESES
 from src.schemas import EvidenceType, PipelineResult, ProxyHypothesis, ResearchOutput, VerificationMethod, VerificationResult, Verdict
 from src.utils.data_utils import load_variable_metadata, get_available_indicators
 
@@ -59,40 +59,15 @@ def list_indicators() -> None:
     console.print(table)
 
 
-async def run_stage1(tla: str, metadata: dict) -> ResearchOutput:
-    """Run Stage 1: deep research + hypothesis parsing."""
-    from src.stage1.research import run_deep_research
-    from src.stage1.parser import parse_research_report
+async def run_stage1_discovery(
+    tla: str, metadata: dict, max_tool_calls: int = DISCOVERY_MAX_TOOL_CALLS,
+) -> ResearchOutput:
+    """Run Stage 1 via the tool-using discovery agent."""
+    from src.stage1.discovery import run_discovery
 
-    console.print(f"\n[bold blue]Stage 1: Deep Research for {tla}[/bold blue]")
-
-    # Run research with retries
-    markdown, citations = None, []
-    for attempt in range(1, API_RETRY_ATTEMPTS + 1):
-        try:
-            markdown, citations = run_deep_research(tla, metadata)
-            break
-        except Exception as e:
-            logger.warning("Research attempt %d failed: %s", attempt, e)
-            if attempt == API_RETRY_ATTEMPTS:
-                raise
-            await asyncio.sleep(API_RETRY_BACKOFF ** attempt)
-
-    console.print(f"  Research report: {len(markdown)} chars, {len(citations)} citations")
-
-    # Parse with retries
-    research_output = None
-    for attempt in range(1, API_RETRY_ATTEMPTS + 1):
-        try:
-            research_output = parse_research_report(tla, markdown, citations, metadata)
-            break
-        except Exception as e:
-            logger.warning("Parsing attempt %d failed: %s", attempt, e)
-            if attempt == API_RETRY_ATTEMPTS:
-                raise
-            await asyncio.sleep(API_RETRY_BACKOFF ** attempt)
-
-    console.print(f"  Parsed {len(research_output.hypotheses)} hypotheses")
+    console.print(f"\n[bold blue]Stage 1: Discovery Agent for {tla}[/bold blue]")
+    research_output = await run_discovery(tla, metadata, max_tool_calls=max_tool_calls)
+    console.print(f"  Discovered {len(research_output.hypotheses)} hypotheses")
     return research_output
 
 
@@ -149,7 +124,7 @@ async def run_stage2(
     inclusion_mode: str | None = None,
 ) -> list[VerificationResult]:
     """Run Stage 2: verify each hypothesis, routing by evidence_type."""
-    from src.stage2.verifier import verify_hypothesis
+    from src.stage2.verifier import verify_hypothesis, verify_hypothesis_from_db
     from src.stage2.prompts import build_corroboration_prompt, build_exploratory_prompt, build_verification_prompt
     from src.stage2.data_loader import prepare_verification_context
 
@@ -225,7 +200,11 @@ async def run_stage2(
             )
 
         try:
-            result = await verify_hypothesis(hyp, tla, prompt_override=prompt_override)
+            # Use DB-backed verification if data was fetched during discovery
+            if hyp.db_variable_id:
+                result = await verify_hypothesis_from_db(hyp, tla, output_dir)
+            else:
+                result = await verify_hypothesis(hyp, tla, prompt_override=prompt_override)
 
             # Infer verification_method from work_type if agent didn't set it
             if result.verification_method is None:
@@ -271,7 +250,7 @@ async def run_stage2(
                     # Show inclusion score if available
                     if annotation.inclusion_score and annotation.inclusion_score.criteria_met is not None:
                         console.print(
-                            f"    Inclusion: {annotation.inclusion_score.criteria_met}/9 criteria met"
+                            f"    Inclusion: {annotation.inclusion_score.criteria_met}/10 criteria met"
                         )
             except Exception as val_err:
                 logger.debug("Validation failed for %s: %s", hyp.id, val_err)
@@ -341,7 +320,7 @@ def print_summary(result: PipelineResult) -> None:
 
             # Inclusion score
             if vr.validation and vr.validation.inclusion_score and vr.validation.inclusion_score.criteria_met is not None:
-                incl_str = f"{vr.validation.inclusion_score.criteria_met}/9"
+                incl_str = f"{vr.validation.inclusion_score.criteria_met}/10"
             else:
                 incl_str = "[dim]—[/dim]"
 
@@ -384,7 +363,8 @@ async def run_pipeline(args: argparse.Namespace) -> None:
 
     # Stage 1
     if args.stage in ("1", "both"):
-        research_output = await run_stage1(tla, metadata)
+        max_tc = getattr(args, "max_tool_calls", DISCOVERY_MAX_TOOL_CALLS)
+        research_output = await run_stage1_discovery(tla, metadata, max_tc)
         hypotheses = research_output.hypotheses
 
     # Load pre-existing hypotheses if specified
@@ -454,7 +434,9 @@ class _ListHandler(logging.Handler):
             pass
 
 
-async def run_pipeline_headless(tla: str) -> AsyncGenerator[tuple[str, str | None], None]:
+async def run_pipeline_headless(
+    tla: str,
+) -> AsyncGenerator[tuple[str, str | None], None]:
     """Run the full pipeline for *tla*, yielding ``(log_text, dashboard_html)`` tuples.
 
     Designed for the Gradio web UI — no Rich markup, no interactive prompts,
@@ -497,8 +479,8 @@ async def run_pipeline_headless(tla: str) -> AsyncGenerator[tuple[str, str | Non
         yield (_log(f"  {desc} ({units})"), None)
 
         # Stage 1
-        yield (_log(f"\n--- Stage 1: Deep Research for {tla} ---"), None)
-        research_output = await run_stage1(tla, metadata)
+        yield (_log(f"\n--- Stage 1: Discovery Agent for {tla} ---"), None)
+        research_output = await run_stage1_discovery(tla, metadata)
         hypotheses = research_output.hypotheses
         yield (_log(f"  Parsed {len(hypotheses)} hypotheses"), None)
 
@@ -574,6 +556,12 @@ def main() -> None:
         type=int,
         default=MAX_HYPOTHESES,
         help=f"Maximum hypotheses to verify (default: {MAX_HYPOTHESES})",
+    )
+    parser.add_argument(
+        "--max-tool-calls",
+        type=int,
+        default=DISCOVERY_MAX_TOOL_CALLS,
+        help=f"Max tool calls for discovery agent (default: {DISCOVERY_MAX_TOOL_CALLS})",
     )
     parser.add_argument(
         "--verbose", "-v",

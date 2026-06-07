@@ -7,6 +7,25 @@ Validation source: docs/2024epitechnicalappendix20241207.pdf
 See also: docs/domain_knowledge_process.txt for cross-referencing methodology.
 """
 
+# Indicators whose EPI imputation model is effectively f(GDP, region).
+# For these TLAs, a proxy with low partial correlation after controlling for
+# GDP per capita is re-deriving the imputation model rather than contributing
+# new information — the validator escalates signal_independence from advisory
+# to a yellow-flag warning (still not a rejection).
+#
+# WRR is the canonical example: the Technical Appendix describes a
+# cross-sectional regression of waste recovery rate on log-GDP and region
+# with R^2 = 0.42, which is used to impute 56 missing countries.
+GDP_IMPUTATION_DEPENDENT: set[str] = {
+    "WRR",  # Waste Recovery Rate — Hoornweg-style regression on log-GDP
+}
+
+
+def is_gdp_imputation_dependent(tla: str) -> bool:
+    """Return True if the indicator's EPI imputation model is essentially f(GDP)."""
+    return tla in GDP_IMPUTATION_DEPENDENT
+
+
 DOMAIN_KNOWLEDGE: dict[str, str] = {
     # =========================================================================
     # ENVIRONMENTAL HEALTH — Air Quality (AIR)

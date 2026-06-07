@@ -1,17 +1,31 @@
 {
-  "no_synthetic_data": true,
-  "year_alignment_ok": true,
+  "no_synthetic_data": false,
+  "year_alignment_ok": false,
   "hypothesis_interpretation_ok": false,
   "data_source_authentic": false,
   "country_coverage_adequate": true,
   "outlier_concerns": false,
-  "mechanistic_explanation": "The hypothesis proposes that wastewater treatment plant (WWTP) capacity—specifically the number of facilities employing anaerobic digestion for biosolids recovery—drives waste recovery rates (WRR). The script instead tested safely managed sanitation services (SH.STA.SMSS.ZS), which measures population access to improved sanitation, not WWTP infrastructure capacity or anaerobic digestion adoption. While both relate to wastewater management, they measure fundamentally different constructs: one is individual-level sanitation access, the other is facility-level treatment technology deployment.",
+  "mechanistic_explanation": "The hypothesis proposes that countries generating a large share of electricity from fossil fuels (wb:EG.ELC.FOSL.ZS) have less incentive to develop waste-to-energy plants because cheap fossil fuels undercut the economics of incineration with energy recovery. However, the verification script tested a completely different proxy: safely managed sanitation services (SH.STA.SMSS.ZS and SH.STA.BASS.ZS), which measures wastewater treatment infrastructure access, not fossil fuel electricity dependence. This is a fundamental mismatch between hypothesis and verification.",
   "issues": [
-    "CRITICAL: Proxy variable substitution is materially misaligned. Hypothesis specifies 'number of municipal wastewater treatment plants and proportion employing anaerobic digestion' (facility-level infrastructure metric). Script used 'safely managed sanitation services' (population-level access metric)—a conceptually different variable that happens to correlate with development but does not directly measure WWTP capacity or anaerobic digestion deployment.",
-    "CRITICAL: Data source not authentic. Hypothesis cites UN-Water Progress on Wastewater Treatment (https://www.unwater.org/publications/progress-wastewater-treatment-2024-update) as the primary source. The script acknowledges this URL is PDF-only and instead uses World Bank sanitation indicators. This substitution was documented in data_quality_notes but the proxy is not a documented alternative to UN-Water—it is a different data source measuring a different variable.",
-    "MODERATE: Partial correlation not computed. Script notes 'Partial correlation could not be computed' but does not explain why (GPC merge succeeded with 360 obs). The summary acknowledges 'Strong correlation likely reflects shared GDP confounding,' which suggests the bivariate r=0.686 may be spurious confounding rather than genuine proxy validity. Absence of GDP control weakens the verdict.",
-    "MODERATE: Functional form mismatch. Hypothesis expects log-linear form; script found quadratic form fits best (quadratic R²=0.539 vs log-linear R²=0.363, better AIC). The best-fit functional form contradicts the hypothesis prediction.",
-    "MODERATE: Proxy substitution not theoretically justified in data_quality_notes. Script claims 'safely managed sanitation services coverage correlates strongly with WWTP infrastructure' but provides no citation or empirical evidence for this equivalence. The two measures need not correlate at country level (e.g., a country could have good sanitation access via pit latrines without advanced WWTP infrastructure)."
+    "CRITICAL: Proxy variable mismatch. Hypothesis specifies 'Electricity production from fossil fuels (% of total)' (wb:EG.ELC.FOSL.ZS), but the verification script attempted to use World Bank sanitation/wastewater treatment indicators (SH.STA.SMSS.ZS, SH.STA.BASS.ZS, EN.H2O.WATR.ZS) instead. This is not a reasonable substitution—these measure water/sanitation infrastructure, not electricity generation.",
+    "CRITICAL: Data source not authentic. The hypothesis specifies World Bank indicator EG.ELC.FOSL.ZS (Electricity production from fossil fuels), but verify.py never attempts to fetch this indicator. Instead, it searches for wastewater treatment proxies, which contradicts the hypothesis premise.",
+    "CRITICAL: Hypothesis interpretation fundamentally wrong. The hypothesis mechanism concerns fossil-fuel dependence of electricity grids and its effect on waste-to-energy economics. The script tested wastewater treatment infrastructure—a completely different domain (water/sanitation vs. electricity).",
+    "Year alignment issue: The result.json shows 425 observations across 131 countries, but reports target coverage as '2016-2022' while hypothesis specifies '1990-2023'. The proxy data likely has a different temporal span than claimed, and the merge appears to have created a narrower dataset than the hypothesis intended.",
+    "Data quality notes claim alignment was successful, but the actual proxy used (sanitation services) is incompatible with the stated hypothesis proxy (fossil fuel electricity generation). The 'Proxy coverage: 203 countries, 1990-2023' in result.json may refer to the generic WB coverage, not the actual data used in the merge.",
+    "The verified result claims 'confirmed' verdict with r=-0.409 (negative correlation), which happens to match the hypothesis's expected direction (negative), but this is likely coincidental given the wrong proxy was tested. The correlation between sanitation infrastructure and waste recovery may indeed be negative due to GDP confounding, but this has nothing to do with the fossil electricity hypothesis."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": null,
+    "outcome_focus": null,
+    "established_methodology": true,
+    "verified_results": false,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "criteria_met": 4,
+    "criteria_notes": "The tested proxy (sanitation services) fails on relevance—it does not measure electricity generation from fossil fuels as specified. The established_methodology, spatial_completeness, temporal_completeness, recency, and open_access criteria are met for the World Bank data source in general, but the proxy itself is not relevant to the hypothesis. Verified_results is false because the verification tested the wrong variable entirely, making the result uninterpretable for the stated hypothesis."
+  }
 }

@@ -8,3 +8,10 @@ build/
 
 # Proprietary EPI data — keep local only
 docs/
+
+# OS noise
+.DS_Store
+
+# Large binary presentation files — keep local only
+*.key
+*.pptx

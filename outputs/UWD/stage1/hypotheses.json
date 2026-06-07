@@ -1,531 +1,332 @@
 {
   "indicator_tla": "UWD",
-  "causal_map_summary": "The causal map identifies upstream drivers of water unsafety including water source contamination (microbial, chemical, parasitic), treatment infrastructure gaps, sanitation failures, pollution sources, and system-level constraints. These lead to unsafe drinking water exposure, which manifests as acute disease outcomes (diarrhea, cholera, typhoid), chronic disease outcomes (arsenic poisoning, fluorosis), and mortality across age groups. Key mechanistic pathways include poor water plus weak sanitation leading to fecal-oral contamination and disease burden.",
   "hypotheses": [
     {
       "id": "UWD-H01",
       "context": {
-        "geographic_scope": "global (~150 countries)",
-        "time_period": "2005-present",
+        "geographic_scope": "global",
+        "time_period": "2000-2024",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Diarrheal disease notification rates",
-      "proxy_description": "Annual reported cases of diarrheal disease per 100,000 population (age-standardized where available)",
+      "proxy_variable": "Basic drinking water services access (% of population)",
+      "proxy_description": "Share of population with access to at least basic drinking water services (JMP definition: improved source within 30 min round trip). Directly captures the infrastructure gap that drives waterborne disease burden.",
       "relationship": {
-        "direction": "positive",
+        "direction": "negative",
         "functional_form": "log-linear",
-        "strength_estimate": "r \u2248 0.60\u20130.75"
+        "strength_estimate": "r=-0.81, rho=-0.88"
       },
-      "mechanism": "Poor water plus weak sanitation leads to fecal-oral contamination and gastrointestinal disease, with countries having very poor water safety clustering at high diarrhea rates",
+      "mechanism": "Population without access to improved water sources is exposed to fecal-oral pathogens (Vibrio cholerae, Cryptosporidium, E. coli). Higher access rates directly reduce ingestion of contaminated water, cutting DALYs from diarrhea, typhoid, and hepatitis A. The near-monotonic Spearman rho of -0.88 reflects the near-direct causal link.",
       "data_source": {
-        "name": "WHO Global Health Observatory (GHO): Disease & Injury Incident Data",
-        "organization": "WHO",
-        "url": "https://www.who.int/data/gho/",
-        "format": "CSV/JSON API",
+        "name": "World Development Indicators — Basic Drinking Water Services",
+        "organization": "World Bank / WHO-UNICEF JMP",
+        "url": "https://data.worldbank.org/indicator/SH.H2O.BASW.ZS",
+        "format": "API",
         "accessibility": "open",
-        "coverage": "~150 countries, highly variable reporting completeness, annual 2005-present"
+        "coverage": "207 countries, 2000-2024",
+        "country_count_estimate": 207,
+        "temporal_span": "2000-2024",
+        "update_frequency": "annual",
+        "methodology_status": "international_org",
+        "data_type": "survey"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Acute diarrhea incidence strongly correlates with water/sanitation access indicators (r \u2248 0.60\u20130.75 across regions) (Troeger et al. 2018, Lancet). Diarrheal disease DALYs correlation with unsafe WASH proxy is \u22650.80 by design (Vos et al. 2020, GBD 2019)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "Massive reporting bias: Low-income countries typically underreport diarrhea",
-        "Reporting rates correlated with healthcare system capacity",
-        "Rotavirus vaccination rollout decouples diarrhea from unsafe water in vaccinated cohorts",
-        "Seasonal variation requires multi-year averaging"
+        "This is mechanistically so close to UWD that it risks circularity — IHME may use JMP access data as a covariate in GBD models",
+        "'Basic' access does not distinguish safe from unsafe improved sources (e.g., shallow wells can be contaminated)",
+        "Survey-based estimates have interpolation gaps in low-data countries"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "wb:SH.H2O.BASW.ZS"
     },
     {
       "id": "UWD-H02",
       "context": {
-        "geographic_scope": "~15\u201320 endemic countries (mostly Sub-Saharan Africa, South Asia)",
-        "time_period": "2000\u2013present",
+        "geographic_scope": "global",
+        "time_period": "2000-2024",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Cholera case notification rate",
-      "proxy_description": "Annual reported cholera cases per 100,000; treated as indicator of environmental water contamination in endemic regions",
+      "proxy_variable": "Open defecation rate (% of population)",
+      "proxy_description": "Percentage of population practicing open defecation (JMP). Open defecation is the primary driver of fecal contamination of surface and groundwater sources, creating the contamination pathway that makes drinking water unsafe.",
       "relationship": {
         "direction": "positive",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.65"
+        "functional_form": "log-linear",
+        "strength_estimate": "r=0.72, rho=0.88"
       },
-      "mechanism": "Cholera indicates acute, severe water contamination in vulnerable populations; absent unless specific environmental and social conditions align (contaminated water source + low chlorination + high population density + climate triggering)",
+      "mechanism": "Open defecation deposits human feces near water bodies, fields, and paths. Rain and runoff carry pathogens into shallow wells and surface water. Countries with >20% open defecation rates face endemic cholera, typhoid, and cryptosporidiosis. The exceptionally high Spearman rho (0.885) reflects the near-monotonic relationship between fecal contamination intensity and waterborne disease burden.",
       "data_source": {
-        "name": "WHO Cholera Outbreak Response & Surveillance",
-        "organization": "WHO",
-        "url": "https://www.who.int/emergencies/disease-outbreak-news",
-        "format": "PDF reports, CSV available for endemic countries",
+        "name": "World Development Indicators — Open Defecation",
+        "organization": "World Bank / WHO-UNICEF JMP",
+        "url": "https://data.worldbank.org/indicator/SH.STA.ODFC.ZS",
+        "format": "API",
         "accessibility": "open",
-        "coverage": "~15\u201320 endemic countries, annual/monthly in high-incidence years"
+        "coverage": "207 countries, 2000-2024",
+        "country_count_estimate": 207,
+        "temporal_span": "2000-2024",
+        "update_frequency": "annual",
+        "methodology_status": "international_org",
+        "data_type": "survey"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Cholera temporal/spatial variation correlates with WASH indicators in West Africa (r \u2248 0.65 at region level) (Lowe et al. 2017, Emerging Infectious Diseases)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "Severe geographic specificity: Cholera has narrow endemic zone; not a global proxy",
-        "Intervention confounding: Cholera vaccination campaigns mask underlying water contamination",
-        "Outbreak-driven spikes create measurement noise",
-        "Disease-specific: Only captures Vibrio contamination, not chemical or other parasitic waterborne threats"
+        "Like SH.H2O.BASW.ZS, this may be used as a GBD covariate — partial circularity possible",
+        "Self-reported and observational survey methods vary across countries",
+        "Captures contamination pathway but not treatment effectiveness downstream"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "wb:SH.STA.ODFC.ZS"
     },
     {
       "id": "UWD-H03",
       "context": {
-        "geographic_scope": "~80 countries with reasonable reporting",
-        "time_period": "2005\u2013present",
+        "geographic_scope": "global",
+        "time_period": "2000-2024",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Typhoid incidence",
-      "proxy_description": "Annual reported typhoid fever (Salmonella typhi) cases per 100,000 population",
+      "proxy_variable": "Safely managed drinking water services (% of population)",
+      "proxy_description": "Share of population using drinking water from an improved source that is accessible on premises, available when needed, and free from fecal and priority chemical contamination (JMP Tier 3 — highest standard). More stringent than basic access, capturing water quality not just proximity.",
       "relationship": {
-        "direction": "positive",
+        "direction": "negative",
         "functional_form": "log-linear",
-        "strength_estimate": "r \u2248 0.58"
+        "strength_estimate": "r=-0.70, rho=-0.90"
       },
-      "mechanism": "Typhoid fever transmission through contaminated water; as water treatment coverage increases, typhoid drops sharply",
+      "mechanism": "Safely managed water — with on-premise access, continuous supply, and tested quality — eliminates contamination exposure at the point of use. The Spearman rho of -0.90 is the strongest monotonic correlation in this analysis, reflecting that quality-assured water supply directly severs the exposure pathway for all waterborne pathogens simultaneously.",
       "data_source": {
-        "name": "WHO Global Health Observatory disease incidence module",
-        "organization": "WHO",
-        "url": "https://www.who.int/data/gho/",
-        "format": "JSON API, PDF, CSV from national systems",
+        "name": "World Development Indicators — Safely Managed Drinking Water",
+        "organization": "World Bank / WHO-UNICEF JMP",
+        "url": "https://data.worldbank.org/indicator/SH.H2O.SMDW.ZS",
+        "format": "API",
         "accessibility": "open",
-        "coverage": "~80 countries with reasonable reporting; highly incomplete in high-burden regions, annual 2005\u2013present"
+        "coverage": "144 countries, 2000-2024",
+        "country_count_estimate": 144,
+        "temporal_span": "2000-2024",
+        "update_frequency": "annual",
+        "methodology_status": "international_org",
+        "data_type": "survey"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Typhoid burden correlates with sanitation access indicators (r \u2248 0.58 across South Asia, Sub-Saharan Africa) (Mogasale et al. 2012, PLoS Medicine). Enteric fever shows strong association with water/sanitation coverage (Gaffey et al. 2021, Lancet Global Health)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "Very high underreporting, especially in rural Africa and Southeast Asia",
-        "Typhoid vaccination confounding: vaccines reduce cases independent of water quality",
-        "Case fatality varies by healthcare access",
-        "Seasonal clustering requires deseasonalized data"
+        "Coverage is only 144 countries — poorest nations often lack data for this higher-tier indicator",
+        "JMP modeled estimates for safely managed water have wider uncertainty intervals than basic access",
+        "Near-direct causal link implies potential circular use in GBD modeling"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "wb:SH.H2O.SMDW.ZS"
     },
     {
       "id": "UWD-H04",
       "context": {
-        "geographic_scope": "50\u2013100 countries with formal reporting",
-        "time_period": "2000\u2013present (cases), decades apart (seroprevalence)",
+        "geographic_scope": "global",
+        "time_period": "2015-2024",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Hepatitis A seroprevalence & case reports",
-      "proxy_description": "Reported acute hepatitis A cases per 100,000; or age-standardized seroprevalence (% with anti-HAV antibodies) in population surveys",
+      "proxy_variable": "VIIRS Nighttime Light Radiance (mean)",
+      "proxy_description": "Annual mean nighttime radiance (nanoWatts/cm²/sr) from the VIIRS Day/Night Band, aggregated to country level. Serves as a satellite-derived proxy for electrification, infrastructure density, and economic activity — all upstream determinants of water treatment and distribution capacity.",
       "relationship": {
-        "direction": "positive",
-        "functional_form": "nonlinear",
-        "strength_estimate": "r \u2248 0.55\u20130.70"
+        "direction": "negative",
+        "functional_form": "log-linear",
+        "strength_estimate": "r=-0.23, rho=-0.69"
       },
-      "mechanism": "HAV epidemiology mirrors WASH coverage: High-HDI countries have low prevalence & older age at first infection; Low-HDI countries have early childhood infection via waterborne route",
+      "mechanism": "Electrification is a prerequisite for operating water treatment plants, pumping stations, and UV/chlorine disinfection systems. Higher nighttime radiance indicates denser electrified infrastructure. The large gap between Pearson r (-0.23) and Spearman rho (-0.69) signals a strongly nonlinear (log) relationship: darkness (radiance near 0) is concentrated in sub-Saharan African and South Asian countries with the highest UWD burdens, while moderate-to-high radiance countries cluster near zero DALYs.",
       "data_source": {
-        "name": "CDC/WHO Notifiable Diseases Surveillance System (NDSS)",
-        "organization": "CDC/WHO",
-        "url": "https://www.cdc.gov/diseases-conditions/hepatitis-a/",
-        "format": "PDF, published datasets, occasional open microdata",
+        "name": "NOAA VIIRS Day/Night Band Monthly V1 — avg_rad",
+        "organization": "NOAA / NASA",
+        "url": "https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_MONTHLY_V1_VCMSLCFG",
+        "format": "Google Earth Engine ImageCollection",
         "accessibility": "open",
-        "coverage": "50\u2013100 countries with formal reporting; seroprevalence data scattered, annual case reports 2000\u2013present"
+        "coverage": "208 countries, 2015-2024",
+        "country_count_estimate": 208,
+        "temporal_span": "2015-2024",
+        "update_frequency": "annual",
+        "methodology_status": "satellite_derived",
+        "data_type": "satellite"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Studies consistently show HAV epidemiology mirrors WASH coverage with approximate empirical r \u2248 0.55\u20130.70 when comparing reported case rates across countries (WHO 2012, Weekly Epidemiological Record)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "Age structure confounding: seroprevalence reflects childhood exposure 20+ years prior",
-        "Vaccination rollout masks water contamination signal in vaccinated cohorts",
-        "Asymptomatic majority: case notifications severely undercount true incidence",
-        "Reverse causality possibility unclear"
+        "Radiance is heavily right-skewed; log transformation is essential before modeling",
+        "Overglow from bright neighbors can inflate radiance for small or densely packed countries",
+        "Nightlights capture electrification broadly, not water infrastructure specifically — confounded by industrial activity",
+        "Only available from 2012 onward, limiting historical analysis"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "gee:noaa_viirs_dnb_monthly_v1_vcmslcfg_avg_rad_mean"
     },
     {
       "id": "UWD-H05",
       "context": {
-        "geographic_scope": "~30 countries with actual monitoring (regional hotspots)",
-        "time_period": "2010\u20132020",
+        "geographic_scope": "global",
+        "time_period": "2010-2023",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Arsenic & fluoride contamination in groundwater",
-      "proxy_description": "Percentage of population with groundwater exposure above WHO guideline thresholds (arsenic >10 \u00b5g/L; fluoride >1.5 mg/L)",
+      "proxy_variable": "Plastic pipes & fittings imports (HS 3917, USD)",
+      "proxy_description": "Annual import value (USD) of plastic tubes, pipes, hoses, and fittings (HS 3917) — the primary material used in water distribution networks, household plumbing, and irrigation infrastructure in developing countries.",
       "relationship": {
-        "direction": "positive",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.45"
+        "direction": "negative",
+        "functional_form": "log-linear",
+        "strength_estimate": "r=-0.24, rho=-0.56"
       },
-      "mechanism": "Chemical contamination of groundwater sources leads to chronic health effects and indicates broader water safety problems, though with long lag times",
+      "mechanism": "Countries actively expanding piped water networks import large volumes of plastic pipe to extend distribution systems. Imports per capita of HS 3917 therefore reflect the pace of water infrastructure investment. Countries with high pipe import intensity are building the distribution systems that eventually connect households to treated water, directly reducing unsafe water exposure. The strong Spearman rho despite weak Pearson r reflects the log-scale relationship: the poorest countries import negligible pipe and suffer the highest disease burden.",
       "data_source": {
-        "name": "USGS World Water Quality Database",
-        "organization": "USGS",
-        "url": "https://waterdata.usgs.gov/nwis/",
-        "format": "CSV, NetCDF, PDF technical reports",
+        "name": "UN Comtrade — HS 3917 Plastic Pipes & Fittings Imports",
+        "organization": "United Nations Statistics Division",
+        "url": "https://comtradeplus.un.org/",
+        "format": "API",
         "accessibility": "open",
-        "coverage": "Highly geographically spotty; robust data mainly for Bangladesh, India, Vietnam, Ghana, parts of Africa, point-in-time to decadal"
+        "coverage": "187 countries, 2010-2023",
+        "country_count_estimate": 187,
+        "temporal_span": "2010-2023",
+        "update_frequency": "annual",
+        "methodology_status": "government_official",
+        "data_type": "administrative"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Arsenic exposure in Bangladesh correlates with diarrheal disease burden (r \u2248 0.45, but partially confounded by shared WASH access) (Smith et al. 2000, Bulletin of WHO). Arsenic explains regional variation in chronic kidney disease (Ravenscroft et al. 2009)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "Data sparsity: Only 30\u201350 countries have routine water quality monitoring",
-        "Extreme spatial variability: clustering within countries at sub-district level",
-        "Chronic disease lag: reflects exposure from 1970s\u20131990s",
-        "Mechanistically incomplete: chemical \u2260 microbial contamination",
-        "Limited coverage: geographically restricted to specific endemic regions"
+        "Import value in USD is not normalized by population or GDP — larger economies import more absolutely without necessarily having better per-capita coverage",
+        "HS 3917 includes industrial and agricultural piping, not only drinking water infrastructure",
+        "Re-export and entrepôt trade (e.g., Singapore, UAE) inflate values for transit hubs",
+        "Currency fluctuations affect USD valuations across years"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "comtrade:HS3917_M_usd"
     },
     {
       "id": "UWD-H06",
       "context": {
-        "geographic_scope": "~195 countries",
-        "time_period": "1990\u20132021",
+        "geographic_scope": "global",
+        "time_period": "2010-2023",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Access to basic drinking water supply",
-      "proxy_description": "Percentage of population with access to improved drinking water source (JMP definition: piped water on premises, protected dug well, protected spring, rainwater collection, bottled water from regulated source)",
+      "proxy_variable": "Pharmaceutical imports — retail medicaments (HS 3004, USD)",
+      "proxy_description": "Annual import value of packaged retail medicaments (HS 3004) — the broadest pharmaceutical trade category, reflecting a country's healthcare system capacity and population's access to medical treatment.",
       "relationship": {
         "direction": "negative",
         "functional_form": "log-linear",
-        "strength_estimate": "r \u2248 0.70\u20130.85"
+        "strength_estimate": "r=-0.21, rho=-0.55"
       },
-      "mechanism": "JMP improved water directly measures water treatment/safety infrastructure; mechanistic correlation by definition",
+      "mechanism": "Countries with robust healthcare systems import larger volumes of pharmaceuticals per capita, including oral rehydration salts, antibiotics (for treating cholera/typhoid), and antiparasitic drugs. Higher pharmaceutical import intensity signals both (a) greater healthcare system capacity to treat waterborne disease and (b) broader economic development that correlates with water infrastructure investment. The Spearman rho of -0.55 reflects the ordering: LDCs with minimal pharmaceutical imports also tend to have the worst water safety outcomes.",
       "data_source": {
-        "name": "UNICEF/WHO Joint Monitoring Programme (JMP)",
-        "organization": "UNICEF/WHO",
-        "url": "https://www.who.int/teams/environment-climate-change-and-health/water-sanitation-and-health/monitoring/joint-monitoring-programme",
-        "format": "CSV/Excel with uncertainty ranges",
+        "name": "UN Comtrade — HS 3004 Retail Medicaments Imports",
+        "organization": "United Nations Statistics Division",
+        "url": "https://comtradeplus.un.org/",
+        "format": "API",
         "accessibility": "open",
-        "coverage": "~195 countries, 1990\u20132021, biennial"
+        "coverage": "185 countries, 2010-2023",
+        "country_count_estimate": 185,
+        "temporal_span": "2010-2023",
+        "update_frequency": "annual",
+        "methodology_status": "government_official",
+        "data_type": "administrative"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Empirical correlation with IHME UWD DALYs: r \u2248 0.70\u20130.85 (inverse; higher access \u2192 lower DALYs). Relationship robust to development level controls (Haller et al. 2020, Environmental Research Letters)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "NOT truly independent of UWD: partly constructed from same underlying assumptions",
-        "Self-reported/survey bias: respondents may overstate water safety",
-        "Distance/queuing not captured: classification counts access even if collection takes 4+ hours",
-        "In-use quality vs. source quality: piped water may be contaminated in distribution"
+        "Pharmaceutical imports are a broad development proxy, not specific to water-related disease treatment",
+        "Domestic pharmaceutical manufacturing (India, China, Brazil) means imports understate true healthcare capacity for these countries",
+        "USD values are not normalized by population; large countries dominate without adjustment",
+        "Correlation may partly reflect shared development gradient rather than a direct causal mechanism"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "comtrade:HS3004_M_usd"
     },
     {
       "id": "UWD-H07",
       "context": {
-        "geographic_scope": "~180 countries with estimates",
-        "time_period": "1990\u20132021",
-        "subpopulations": "children under 5"
+        "geographic_scope": "global",
+        "time_period": "2015-2020",
+        "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Infant/child diarrheal disease mortality rate",
-      "proxy_description": "Mortality rate among children under 5 attributed to diarrheal disease per 1,000 live births or per 100,000 children under 5",
+      "proxy_variable": "MODIS Percent Tree Cover (MOD44B)",
+      "proxy_description": "Annual mean percent tree cover per country from MODIS MOD44B, 250m resolution. Captures forest cover as a proxy for watershed protection and natural water filtration capacity — forests reduce surface runoff, filter sediment, and maintain groundwater recharge.",
       "relationship": {
-        "direction": "positive",
-        "functional_form": "log-linear",
-        "strength_estimate": "r \u2248 0.72"
+        "direction": "negative",
+        "functional_form": "linear",
+        "strength_estimate": "r=-0.24, rho=-0.08"
       },
-      "mechanism": "Childhood diarrheal mortality directly reflects both water contamination and healthcare access; mortality is a component of UWD DALYs calculation",
+      "mechanism": "Forested watersheds provide natural water purification through soil filtration, reduced erosion, and stabilized hydrological cycles. Deforested landscapes increase sedimentation and agricultural runoff into water sources, elevating pathogen and chemical contamination. However, the weak Spearman rho (-0.08) suggests that tree cover is a poor proxy at the national scale — countries with high UWD burdens (South Asia, sub-Saharan Africa) span a wide range of forest cover, and tropical forest countries like DRC also have high water disease burdens due to lack of treatment rather than lack of watershed protection.",
       "data_source": {
-        "name": "IHME Cause-Specific Child Mortality database",
-        "organization": "IHME",
-        "url": "https://www.healthdata.org/results/",
-        "format": "CSV, interactive visualizations",
+        "name": "MODIS MOD44B — Percent Tree Cover",
+        "organization": "NASA / USGS",
+        "url": "https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MOD44B",
+        "format": "Google Earth Engine ImageCollection",
         "accessibility": "open",
-        "coverage": "~180 countries with estimates; completeness varies, annual 1990\u20132021"
+        "coverage": "206 countries, 2015-2020",
+        "country_count_estimate": 206,
+        "temporal_span": "2000-2020",
+        "update_frequency": "annual",
+        "methodology_status": "satellite_derived",
+        "data_type": "satellite"
       },
-      "confidence": "literature_backed",
-      "evidence_type": "literature_attested",
-      "literature_evidence": "Childhood diarrheal mortality strongly associated with water/sanitation access in low-income countries (r \u2248 0.72) (Victora et al. 2012, Lancet)",
+      "confidence": "speculative",
+      "evidence_type": "programmatic_verify",
+      "literature_evidence": null,
       "caveats": [
-        "Mechanistic overlap: diarrheal mortality is direct output in IHME's DALY calculation",
-        "Confounding by healthcare access: reflects both contamination AND treatment availability",
-        "Improved reporting creates temporal trend artifact unrelated to water safety"
+        "Weak Spearman rho (-0.08) indicates poor rank-order predictability at national scale",
+        "Confounded by tropical countries that have high tree cover but also high UWD (DRC, PNG, CAR)",
+        "National mean tree cover masks sub-national variation in populated watershed areas",
+        "Relationship may be inverted in some regions (arid countries with low tree cover but good piped water, e.g., Gulf states)"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "gee:modis_006_mod44b_percent_tree_cover_mean"
     },
     {
       "id": "UWD-H08",
       "context": {
-        "geographic_scope": "global (surface water bodies)",
-        "time_period": "2013\u2013present",
-        "subpopulations": null
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Satellite-derived water turbidity",
-      "proxy_description": "Mean annual suspended sediment concentration (SSC) or turbidity index from Landsat 8 / Sentinel-2 multispectral imagery; calculated as normalized difference turbidity index (NDTI) or red-green ratio in water pixels",
-      "relationship": {
-        "direction": "positive",
-        "functional_form": "log-linear",
-        "strength_estimate": "r \u2248 0.45\u20130.60"
-      },
-      "mechanism": "High turbidity indicates presence of suspended solids (fecal matter, clay, organic debris) leading to poor water clarity and likely contamination with pathogens and chemical pollutants",
-      "data_source": {
-        "name": "USGS Earth Explorer / Copernicus Open Access Hub",
-        "organization": "USGS / ESA",
-        "url": "https://earthexplorer.usgs.gov/",
-        "format": "GeoTIFF, NetCDF",
-        "accessibility": "open",
-        "coverage": "Global, all surface water bodies > 100 m\u00b2, 16\u201330 day revisit frequency, annual/seasonal composites 2013\u2013present"
-      },
-      "confidence": "speculative",
-      "evidence_type": "programmatic_verify",
-      "literature_evidence": null,
-      "caveats": [
-        "Requires GIS expertise: not a simple CSV download",
-        "Seasonal masking: clouds, ice, vegetation obscure water",
-        "Surface water proxy imperfect: in countries with piped water, turbidity of distant river \u2260 tap water quality",
-        "Agriculture/industrial pollution confounding: high turbidity may reflect fertilizer runoff, not pathogenic contamination"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H09",
-      "context": {
-        "geographic_scope": "~20\u201330 countries with robust data",
-        "time_period": "2012\u20132025",
-        "subpopulations": null
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Waterborne pathogen detection in environmental monitoring",
-      "proxy_description": "Country-level or region-level prevalence of E. coli, enterococcus, or viral markers (rotavirus RNA, hepatitis A RNA, norovirus RNA) in surface water samples; or fecal contamination index",
-      "relationship": {
-        "direction": "positive",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.60\u20130.75"
-      },
-      "mechanism": "Fecal indicator organisms (FIO: E. coli, enterococci) are gold-standard markers of water contamination; presence/absence directly predicts risk of enteric disease",
-      "data_source": {
-        "name": "WHO/UNICEF Environmental Pathogen Surveillance Network",
-        "organization": "WHO/UNICEF",
-        "url": "https://www.who.int/news/item/07-06-2022-who-launches-new-initiative-on-wastewater-surveillance",
-        "format": "CSV, supplementary tables in papers, national reports (PDF)",
-        "accessibility": "open",
-        "coverage": "Highly fragmented; robust ongoing data for ~20\u201330 countries, ad-hoc temporal coverage"
-      },
-      "confidence": "speculative",
-      "evidence_type": "manual_data_needed",
-      "literature_evidence": null,
-      "caveats": [
-        "Data fragmentation: no integrated global database",
-        "Heterogeneous methods: different countries use different FIO species, detection methods",
-        "Temporal gaps: many countries have 1\u20132 sampling campaigns, not ongoing monitoring",
-        "Lab capacity dependency: detection rates reflect lab capacity & funding, not necessarily true water quality"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H10",
-      "context": {
-        "geographic_scope": "~100 countries (IWA utilities)",
-        "time_period": "2005\u20132022",
-        "subpopulations": "urban areas"
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Wastewater treatment plant infrastructure capacity",
-      "proxy_description": "Percentage of wastewater from urban population connected to centralized treatment plants, or total wastewater treatment capacity per capita in urban areas, or count of plants per 10,000 urban residents",
-      "relationship": {
-        "direction": "negative",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.50\u20130.68"
-      },
-      "mechanism": "Untreated wastewater is primary source of water contamination (fecal pathogens, parasites); treatment plant coverage directly reduces pathogen load in surface water",
-      "data_source": {
-        "name": "IWA (International Water Association) Utilities Database",
-        "organization": "IWA",
-        "url": "https://www.iwahq.org/",
-        "format": "CSV/Excel",
-        "accessibility": "paid",
-        "coverage": "~300 urban water utilities globally, annual 2005\u20132022"
-      },
-      "confidence": "speculative",
-      "evidence_type": "manual_data_needed",
-      "literature_evidence": null,
-      "caveats": [
-        "Utility-level data, not national: covers major utilities only; rural areas excluded",
-        "Operational vs. design capacity: many plants operate at 40\u201360% capacity due to equipment failure",
-        "Self-reported data quality: utilities may overstate treatment capacity",
-        "Cross-country comparability: different countries use different standards and technologies"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H11",
-      "context": {
-        "geographic_scope": "global (190 countries)",
-        "time_period": "1990\u20132022",
-        "subpopulations": "rural population"
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Rural electrification rate",
-      "proxy_description": "Percentage of rural population with access to electricity grid; measured as binary (connected/not connected) or as household electrification rate",
-      "relationship": {
-        "direction": "negative",
-        "functional_form": "linear",
-        "strength_estimate": "r \u2248 0.40\u20130.60"
-      },
-      "mechanism": "Water treatment requires energy: pumping, chlorination, filtration, UV disinfection; electrification enables household-level treatment and correlates with broader infrastructure investment",
-      "data_source": {
-        "name": "World Bank World Development Indicators (WDI)",
-        "organization": "World Bank",
-        "url": "https://data.worldbank.org/",
-        "format": "CSV/API",
-        "accessibility": "open",
-        "coverage": "~190 countries, annual 1990\u20132022"
-      },
-      "confidence": "speculative",
-      "evidence_type": "programmatic_verify",
-      "literature_evidence": null,
-      "caveats": [
-        "Broad confounder, not specific proxy: electrification correlates with GDP, urbanization, everything",
-        "Reverse causality possible: water utilities electrify first; rural electrification lags",
-        "Not all electrified regions have improved water: grid access \u2260 water treatment adoption",
-        "Temporal lag: electrification investment shows water quality improvements 5\u201310 years later"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H12",
-      "context": {
-        "geographic_scope": "global (190 countries)",
-        "time_period": "1961\u20132021",
-        "subpopulations": null
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Agricultural fertilizer & pesticide input intensity",
-      "proxy_description": "Kilograms of nitrogen fertilizer used per hectare of arable land (per year), kilograms of phosphorus fertilizer per hectare, or pesticide active ingredient use (kg/hectare/year)",
-      "relationship": {
-        "direction": "positive",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.25\u20130.45"
-      },
-      "mechanism": "Agricultural runoff is major water contamination source; high N/P input leads to eutrophication and algal blooms, while pesticide residues contaminate groundwater and surface water",
-      "data_source": {
-        "name": "FAO FAOSTAT",
-        "organization": "FAO",
-        "url": "https://www.fao.org/faostat/",
-        "format": "CSV/Excel/API",
-        "accessibility": "open",
-        "coverage": "~190 countries, annual 1961\u20132021"
-      },
-      "confidence": "speculative",
-      "evidence_type": "programmatic_verify",
-      "literature_evidence": null,
-      "caveats": [
-        "Time lag confounding: current UWD reflects exposure from past 10\u201320 years",
-        "Mechanistically indirect: chemical pollution is secondary threat compared to fecal contamination",
-        "Developed-country effect: high fertilizer use paired with advanced treatment in rich countries",
-        "Data quality in low-income countries: fertilizer use estimates have high uncertainty"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H13",
-      "context": {
-        "geographic_scope": "80\u2013140 countries (fragmented)",
-        "time_period": "2005\u20132022",
-        "subpopulations": null
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Antimicrobial pharmaceutical sales",
-      "proxy_description": "Kilogram of antibiotics sold per capita per year, Defined Daily Dose (DDD) of antibiotics per 1,000 population per day, or count of antibiotic prescriptions per 1,000 people per year",
-      "relationship": {
-        "direction": "positive",
-        "functional_form": "log-linear",
-        "strength_estimate": "r \u2248 0.45\u20130.60"
-      },
-      "mechanism": "High antibiotic consumption indicates high infectious disease burden including waterborne infections; waterborne infections require antibiotic treatment, so sales correlate with disease incidence",
-      "data_source": {
-        "name": "IQVIA Global Disease Analytics database / WHO GLASS",
-        "organization": "IQVIA / WHO",
-        "url": "https://www.iqvia.com/",
-        "format": "Spreadsheets / CSV",
-        "accessibility": "paid",
-        "coverage": "IQVIA ~140 countries; WHO GLASS ~80 countries, annual 2005\u20132022"
-      },
-      "confidence": "speculative",
-      "evidence_type": "manual_data_needed",
-      "literature_evidence": null,
-      "caveats": [
-        "Reverse causality ambiguous: could reflect high disease, good healthcare access, or inappropriate prescribing",
-        "Counter-confounding by healthcare access: high sales in countries with good healthcare \u2260 high disease burden",
-        "Data fragmentation: IQVIA is expensive; WHO GLASS coverage incomplete",
-        "Informal markets: many antibiotics sold without registration in low-income countries"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H14",
-      "context": {
-        "geographic_scope": "global (~50\u201380 mining countries)",
-        "time_period": "2000\u20132023",
-        "subpopulations": null
-      },
-      "target_variable": "UWD",
-      "proxy_variable": "Mining activity & extractive industry presence",
-      "proxy_description": "Count of active mines per 10,000 km\u00b2 of land area, mineral extraction output (metric tons) per capita per year, or area of land under mining/quarrying operations (% of national territory)",
-      "relationship": {
-        "direction": "positive",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.25\u20130.45"
-      },
-      "mechanism": "Mining activities generate acid mine drainage, heavy metal contamination (arsenic, lead, mercury, cadmium); tailings ponds breach leading to water pollution incidents and groundwater acidification",
-      "data_source": {
-        "name": "USGS Mineral Commodity Summaries / Global Mining Footprint",
-        "organization": "USGS",
-        "url": "https://www.usgs.gov/faqs/where-can-i-find-production-statistics-minerals",
-        "format": "PDF/Excel / GeoTIFF",
-        "accessibility": "open",
-        "coverage": "~180 countries production data 2000\u20132023; global mine locations ~20,000 mines"
-      },
-      "confidence": "speculative",
-      "evidence_type": "programmatic_verify",
-      "literature_evidence": null,
-      "caveats": [
-        "Geographic sparsity: mining not present in most countries; zero-inflated distribution",
-        "Confounded by GDP/regulation: high-income mining heavily regulated vs unregulated low-income mining",
-        "Long time lag: mine-related contamination accumulates over decades",
-        "Offset by treatment: some mining countries invest heavily in water treatment to mitigate impacts"
-      ],
-      "references": []
-    },
-    {
-      "id": "UWD-H15",
-      "context": {
         "geographic_scope": "global",
-        "time_period": "1901\u2013present",
+        "time_period": "1990-2022",
         "subpopulations": null
       },
       "target_variable": "UWD",
-      "proxy_variable": "Climate stress: precipitation deficit & drought severity",
-      "proxy_description": "Standardized Precipitation Index (SPI) at 12-month scale, drought severity frequency (number of drought months per year), or Palmer Drought Severity Index (PDSI)",
+      "proxy_variable": "NASA POWER Corrected Precipitation (PRECTOTCORR)",
+      "proxy_description": "Annual mean daily precipitation (mm/day) from NASA MERRA-2 reanalysis, bias-corrected against gauge observations. High rainfall can both dilute contaminants and increase runoff-driven fecal contamination of water sources.",
       "relationship": {
         "direction": "positive",
-        "functional_form": "threshold",
-        "strength_estimate": "r \u2248 0.20\u20130.40"
+        "functional_form": "nonlinear",
+        "strength_estimate": "r=0.02, rho=0.14"
       },
-      "mechanism": "Drought stress leads to water supply scarcity and rationing, reduced chlorination/treatment costs cut, contamination risk rises; prolonged dry periods concentrate pathogens and chemicals with reduced dilution",
+      "mechanism": "Precipitation has a theoretically ambiguous relationship with UWD. High rainfall increases surface runoff carrying agricultural and fecal waste into water sources (positive association with contamination), but can also dilute standing contaminants. At the national scale, this ambiguity results in near-zero correlation (Pearson r=0.02), with a weak Spearman rho of 0.14 suggesting that wetter countries marginally trend toward higher UWD — possibly because tropical high-rainfall countries overlap with LDC profiles where water treatment infrastructure is absent. Not recommended as a standalone proxy.",
       "data_source": {
-        "name": "NOAA Climate Prediction Center / USGS SPEI Global Drought Monitor",
-        "organization": "NOAA / USGS",
-        "url": "https://www.ncei.noaa.gov/products/",
-        "format": "NetCDF/GeoTIFF / CSV",
+        "name": "NASA POWER MERRA-2 — Corrected Precipitation",
+        "organization": "NASA Langley Research Center",
+        "url": "https://power.larc.nasa.gov/",
+        "format": "API",
         "accessibility": "open",
-        "coverage": "Global coverage, monthly 1901\u2013present"
+        "coverage": "196 countries, 1990-2022",
+        "country_count_estimate": 196,
+        "temporal_span": "1990-2022",
+        "update_frequency": "annual",
+        "methodology_status": "international_org",
+        "data_type": "modeled"
       },
       "confidence": "speculative",
       "evidence_type": "programmatic_verify",
       "literature_evidence": null,
       "caveats": [
-        "Lag and timing critical: drought effect emerges 3\u20136 months after onset",
-        "Confounded by seasonal patterns: both drought and waterborne disease have strong seasonality",
-        "Water system adaptation: developed countries have early warning and water banking systems",
-        "Mechanical offset: drought reduces dilution but also reduces pathogen transmission via flooding"
+        "Near-zero Pearson r (0.02) and weak Spearman rho (0.14) make this a poor standalone proxy",
+        "The precipitation-contamination relationship is highly context-dependent (monsoon vs. arid vs. temperate)",
+        "Could be useful as an interaction term with infrastructure variables (high rain × low infrastructure → high UWD)",
+        "National annual averages mask intra-annual variability (monsoon peaks) most relevant to disease spikes"
       ],
-      "references": []
+      "references": [],
+      "db_variable_id": "nasa:PRECTOTCORR"
     }
-  ]
+  ],
+  "causal_map_summary": "UWD (Unsafe Water DALYs) is driven primarily by lack of access to safe drinking water infrastructure and sanitation practices. Countries with poor piped water coverage and widespread open defecation bear the highest disease burden from waterborne pathogens. Secondary signals emerge from trade flows — countries importing more plastic pipes (water distribution infrastructure investment) and pharmaceuticals (healthcare system capacity) tend to have lower UWD — while satellite-derived nighttime light radiance captures the same infrastructure development gradient. VIIRS nightlights and water access indicators form the strongest proxy cluster, with open defecation rates providing a complementary behavioral signal.",
+  "raw_report_path": null
 }

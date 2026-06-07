@@ -1,17 +1,32 @@
 {
   "no_synthetic_data": true,
   "year_alignment_ok": true,
-  "hypothesis_interpretation_ok": true,
-  "data_source_authentic": true,
-  "country_coverage_adequate": false,
+  "hypothesis_interpretation_ok": false,
+  "data_source_authentic": false,
+  "country_coverage_adequate": true,
   "outlier_concerns": false,
-  "mechanistic_explanation": "High water turbidity indicates the presence of suspended solids (sediments, fecal matter, organic debris) in water bodies, which correlates with poor water clarity and likely contamination by pathogens and chemical pollutants that cause waterborne disease. Therefore, satellite-measured turbidity serves as a proxy for water contamination severity, which should positively correlate with unsafe water disease burden (UWD DALYs).",
+  "mechanistic_explanation": "The hypothesis claims that satellite-derived water turbidity (suspended sediment concentration) indicates contamination risk and should correlate positively with unsafe water DALYs. The mechanism is plausible: high suspended sediment can indicate pathogenic contamination pathways. However, the verify.py script did not test this hypothesis at all—instead it tested NASA POWER precipitation data (PRECTOTCORR), which measures rainfall, not turbidity. Precipitation has an ambiguous relationship with water safety (runoff-driven contamination vs. dilution), explaining the near-zero correlation observed.",
   "issues": [
-    "No actual statistical verification performed: the script halted at data acquisition failure and returned an inconclusive verdict without testing any proxy-target relationship.",
-    "country_coverage_adequate failed: n_countries and n_observations are both null, making any assessment of statistical reliability impossible. The script never reached the point of merging any datasets.",
-    "The inconclusive verdict, while justified by data inaccessibility, means the hypothesis remains untested. This is appropriate documentation of the limitation, but represents a failed verification attempt rather than a successful quality check.",
-    "The script correctly identified that the primary data source (USGS EarthExplorer / Copernicus GeoTIFF imagery) requires GIS expertise and cannot be accessed via standard APIs, which is an honest assessment of the limitation.",
-    "No synthetic data was generated as a fallback, which is correct given the hypothesis's specialized nature, but also means no empirical relationship could be tested."
+    "CRITICAL: Hypothesis specified satellite-derived water turbidity (NDTI/SSC from Landsat 8/Sentinel-2) but result.json contains verification of NASA POWER corrected precipitation (PRECTOTCORR) — a completely different proxy variable measuring rainfall, not turbidity.",
+    "CRITICAL: verify.py script attempted to find turbidity data, acknowledged failure to access it via API, and concluded 'inconclusive due to data inaccessibility.' However, result.json shows a successful verification with 6208 observations and 194 countries using precipitation data instead — suggesting the script fell back to a different proxy without documenting the substitution.",
+    "CRITICAL: The hypothesis mechanism describes precipitation's theoretically ambiguous effect (runoff contamination vs. dilution) and explicitly states it is 'not recommended as a standalone proxy.' This is NOT the satellite turbidity hypothesis that was submitted — it is a different proxy with a different mechanism.",
+    "MODERATE: No explicit data_quality_notes in result.json document that PRECTOTCORR was substituted for satellite turbidity, or explain why. The 'Proxy coverage: 196 countries, 1990-2022' in result.json matches NASA POWER's coverage, not a turbidity product.",
+    "MODERATE: The partial correlation (partial_r = -0.021, p = 0.106) after controlling for GDP per capita is near-zero and marginally non-significant, consistent with the hypothesis's own admission that precipitation is a poor proxy for water contamination.",
+    "MINOR: verify.py printed 'inconclusive due to data inaccessibility' but result.json shows 'verdict: rejected' instead of inconclusive, indicating the result may have been overwritten or sourced from a different run."
   ],
-  "overall_assessment": "major_issues"
+  "overall_assessment": "major_issues",
+  "inclusion_score": {
+    "relevance": false,
+    "performance_orientation": false,
+    "outcome_focus": false,
+    "documented_methodology": true,
+    "verified_results": true,
+    "spatial_completeness": true,
+    "temporal_completeness": true,
+    "recency": true,
+    "open_access": true,
+    "signal_independence": false,
+    "criteria_met": 5,
+    "criteria_notes": "NASA POWER precipitation (the actual proxy tested) has documented methodology, verified results (MERRA-2 reanalysis), good spatial/temporal coverage, and is openly accessible. However, it FAILS the core inclusion criteria: (1) relevance — precipitation is not a direct measurement of water contamination; (2) performance_orientation — Pearson r=0.017 shows near-zero discrimination between countries; (3) outcome_focus — this is meteorological input data, not environmental outcome; (4) signal_independence — partial_r = -0.021 (p=0.106) becomes slightly negative and non-significant after controlling for GDP, indicating no independent signal. Critically, this is NOT the proxy specified in the hypothesis (satellite turbidity), so inclusion assessment is moot."
+  }
 }
