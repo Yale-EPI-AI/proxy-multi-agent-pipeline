@@ -240,12 +240,18 @@ async def run_stage2(
 
             # Run validation agent (non-fatal)
             try:
-                from src.stage2.validator import validate_result
+                from src.stage2.validator import validate_result, validate_result_from_db
 
-                validation_output = await validate_result(
-                    hyp, result, output_dir,
-                    inclusion_binding_mode=inclusion_mode,
-                )
+                if hyp.db_variable_id:
+                    validation_output = await validate_result_from_db(
+                        hyp, result, output_dir,
+                        inclusion_binding_mode=inclusion_mode,
+                    )
+                else:
+                    validation_output = await validate_result(
+                        hyp, result, output_dir,
+                        inclusion_binding_mode=inclusion_mode,
+                    )
                 if validation_output:
                     annotation, adjusted_verdict = validation_output
                     result.validation = annotation

@@ -13,8 +13,18 @@ from src.config import (
     OUTPUTS_DIR,
     VALIDATION_MAX_TOKENS,
 )
-from src.schemas import InclusionCriteriaScore, ProxyHypothesis, ValidationAnnotation, Verdict, VerificationResult
-from src.stage2.prompts import VALIDATOR_SYSTEM_PROMPT, build_validation_prompt
+from src.schemas import (
+    ProxyHypothesis,
+    ValidationAnnotation,
+    Verdict,
+    VerificationResult,
+)
+from src.stage2.prompts import (
+    VALIDATOR_SYSTEM_PROMPT,
+    VALIDATOR_SYSTEM_PROMPT_DB,
+    build_validation_prompt,
+    build_validation_prompt_from_db,
+)
 from src.utils.llm import LLMClient
 
 logger = logging.getLogger(__name__)
@@ -75,6 +85,7 @@ def apply_inclusion_gate(
     if target_tla:
         try:
             from src.domain_knowledge import is_gdp_imputation_dependent
+
             if (
                 is_gdp_imputation_dependent(target_tla)
                 and score.signal_independence is False
@@ -117,54 +128,25 @@ def apply_inclusion_gate(
     return current_verdict, gate_notes
 
 
-async def validate_result(
+async def _call_validation_llm(
     hypothesis: ProxyHypothesis,
     verification_result: VerificationResult,
     output_dir: Path,
+    user_prompt: str,
     inclusion_binding_mode: str | None = None,
+    log_label: str = "",
+    system_prompt: str = VALIDATOR_SYSTEM_PROMPT,
 ) -> Optional[tuple[ValidationAnnotation, Verdict]]:
-    """Validate a verification result by reviewing the agent's outputs.
-
-    Args:
-        hypothesis: The proxy hypothesis that was verified.
-        verification_result: The structured result from verification.
-        output_dir: Directory containing verify.py, result.json, agent_output.txt.
-        inclusion_binding_mode: Override for inclusion criteria binding mode.
-
-    Returns:
-        (ValidationAnnotation, adjusted_verdict) if successful, None on failure.
-    """
-    # Read verification artifacts
-    verify_py = _read_file_safe(output_dir / "verify.py")
-    result_json = _read_file_safe(output_dir / "result.json")
-    # Fall back to in-memory result if file not on disk
-    if not result_json:
-        result_json = verification_result.model_dump_json(indent=2)
-    agent_output = _read_file_safe(output_dir / "agent_output.txt")
-
-    if not verify_py and not result_json:
-        logger.warning("No verify.py or result.json found in %s — skipping validation", output_dir)
-        return None
-
-    # Build prompt
-    hypothesis_json = hypothesis.model_dump_json(indent=2)
-    user_prompt = build_validation_prompt(
-        hypothesis_json=hypothesis_json,
-        verify_py_contents=verify_py,
-        result_json_contents=result_json,
-        agent_output_contents=agent_output,
-    )
-
-    # Call the LLM (async)
+    """Shared tail: LLM call, parse, save validation.json, apply inclusion gate."""
     trace_dir = OUTPUTS_DIR / hypothesis.target_variable
     client = LLMClient(trace_dir=trace_dir)
 
-    logger.info("Validating %s...", hypothesis.id)
+    logger.info("Validating%s %s...", log_label, hypothesis.id)
 
     raw_text = await client.chat_completion(
         model=CLAUDE_VALIDATION_MODEL,
         max_tokens=VALIDATION_MAX_TOKENS,
-        system=VALIDATOR_SYSTEM_PROMPT,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
@@ -194,3 +176,90 @@ async def validate_result(
         annotation.issues.extend(gate_notes)
 
     return annotation, adjusted_verdict
+
+
+async def validate_result(
+    hypothesis: ProxyHypothesis,
+    verification_result: VerificationResult,
+    output_dir: Path,
+    inclusion_binding_mode: str | None = None,
+) -> Optional[tuple[ValidationAnnotation, Verdict]]:
+    """Validate a verification result by reviewing the agent's outputs.
+
+    Args:
+        hypothesis: The proxy hypothesis that was verified.
+        verification_result: The structured result from verification.
+        output_dir: Directory containing verify.py, result.json, agent_output.txt.
+        inclusion_binding_mode: Override for inclusion criteria binding mode.
+
+    Returns:
+        (ValidationAnnotation, adjusted_verdict) if successful, None on failure.
+    """
+    # Read verification artifacts
+    verify_py = _read_file_safe(output_dir / "verify.py")
+    result_json = _read_file_safe(output_dir / "result.json")
+    # Fall back to in-memory result if file not on disk
+    if not result_json:
+        result_json = verification_result.model_dump_json(indent=2)
+    agent_output = _read_file_safe(output_dir / "agent_output.txt")
+
+    if not verify_py and not result_json:
+        logger.warning(
+            "No verify.py or result.json found in %s — skipping validation", output_dir
+        )
+        return None
+
+    # Build prompt
+    hypothesis_json = hypothesis.model_dump_json(indent=2)
+    user_prompt = build_validation_prompt(
+        hypothesis_json=hypothesis_json,
+        verify_py_contents=verify_py,
+        result_json_contents=result_json,
+        agent_output_contents=agent_output,
+    )
+
+    return await _call_validation_llm(
+        hypothesis, verification_result, output_dir, user_prompt,
+        inclusion_binding_mode,
+    )
+
+
+async def validate_result_from_db(
+    hypothesis: ProxyHypothesis,
+    verification_result: VerificationResult,
+    output_dir: Path,
+    inclusion_binding_mode: str | None = None,
+) -> Optional[tuple[ValidationAnnotation, Verdict]]:
+    """Validate a DB-verified hypothesis (no verify.py / agent_output.txt artifacts).
+
+    Args:
+        hypothesis: The proxy hypothesis that was verified.
+        verification_result: The structured result from DB verification.
+        output_dir: Directory containing result.json.
+        inclusion_binding_mode: Override for inclusion criteria binding mode.
+
+    Returns:
+        (ValidationAnnotation, adjusted_verdict) if successful, None on failure.
+    """
+    # Read result.json (the only artifact the DB path produces)
+    result_json = _read_file_safe(output_dir / "result.json")
+    if not result_json:
+        result_json = verification_result.model_dump_json(indent=2)
+
+    if not result_json:
+        logger.warning("No result.json found in %s — skipping validation", output_dir)
+        return None
+
+    # Build prompt (DB-specific — no verify.py / agent_output.txt context)
+    hypothesis_json = hypothesis.model_dump_json(indent=2)
+    user_prompt = build_validation_prompt_from_db(
+        hypothesis_json=hypothesis_json,
+        result_json_contents=result_json,
+    )
+
+    return await _call_validation_llm(
+        hypothesis, verification_result, output_dir, user_prompt,
+        inclusion_binding_mode,
+        log_label=" (DB path)",
+        system_prompt=VALIDATOR_SYSTEM_PROMPT_DB,
+    )

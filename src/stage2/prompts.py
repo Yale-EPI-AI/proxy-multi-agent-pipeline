@@ -1,6 +1,6 @@
 """Prompt templates for Stage 2: hypothesis verification agent."""
 
-from src.schemas import ProxyHypothesis, EvidenceType
+from src.schemas import ProxyHypothesis
 
 VERIFIER_SYSTEM_PROMPT = """\
 You are a data analyst verifying proxy hypotheses for the Yale Environmental Performance Index (EPI).
@@ -204,7 +204,10 @@ verdict="inconclusive" with a note that the only available proxy was already tes
 
 
 def build_verification_prompt(
-    hypothesis: ProxyHypothesis, tla: str, data_summary: str, output_dir=None,
+    hypothesis: ProxyHypothesis,
+    tla: str,
+    data_summary: str,
+    output_dir=None,
     used_sources: list[str] | None = None,
 ) -> str:
     """Build the per-hypothesis verification prompt."""
@@ -255,7 +258,10 @@ Output a COMPLETE Python script in a ```python code block that:
 
 
 def build_corroboration_prompt(
-    hypothesis: ProxyHypothesis, tla: str, data_summary: str, output_dir=None,
+    hypothesis: ProxyHypothesis,
+    tla: str,
+    data_summary: str,
+    output_dir=None,
     used_sources: list[str] | None = None,
 ) -> str:
     """Build a prompt for corroborating a literature-attested hypothesis.
@@ -358,7 +364,10 @@ Output a COMPLETE Python script in a ```python code block that:
 
 
 def build_exploratory_prompt(
-    hypothesis: ProxyHypothesis, tla: str, data_summary: str, output_dir=None,
+    hypothesis: ProxyHypothesis,
+    tla: str,
+    data_summary: str,
+    output_dir=None,
     used_sources: list[str] | None = None,
 ) -> str:
     """Build a prompt for exploring a hypothesis that requires manual data acquisition.
@@ -470,43 +479,7 @@ Output a COMPLETE Python script in a ```python code block that:
 
 # ── Validation Prompt ─────────────────────────────────────────────────────────
 
-VALIDATOR_SYSTEM_PROMPT = """\
-You are a quality-assurance reviewer for the EPI Proxy Discovery Pipeline.
-
-You receive the outputs of a verification agent that tested a proxy hypothesis.
-Your job is to review the agent's work and produce a structured quality annotation.
-You do NOT override the verdict — you only flag potential issues.
-
-## 6-Point Checklist
-
-For each point, set the boolean to false if you detect a problem:
-
-1. **no_synthetic_data** (default true): Set to false if the verify.py script generates
-   fake/simulated proxy data using np.random, random, synthetic formulas, or hardcoded arrays
-   instead of fetching real data. Loading from CSV/API is fine.
-
-2. **year_alignment_ok** (default true): Set to false if proxy and target data are joined
-   on mismatched years — e.g., using 2020 proxy values matched against 2010 target values,
-   or broadcasting a single year of proxy data across all target years. This is about
-   proxy-to-target temporal alignment, NOT about whether the data covers the full time
-   range in the hypothesis. If the available data is narrower than the hypothesis's
-   time_period but proxy and target years match correctly, that is fine.
-
-3. **hypothesis_interpretation_ok** (default true): Set to false if the agent tested a
-   materially different proxy variable than what the hypothesis specified (not just a
-   reasonable substitution, but a conceptually different variable).
-
-4. **data_source_authentic** (default true): Set to false if the proxy data did not come
-   from the source specified in the hypothesis and the substitution was not documented
-   in data_quality_notes.
-
-5. **country_coverage_adequate** (default true): Set to false if the merged dataset has
-   fewer than 15 countries or fewer than 20 observations, making statistical conclusions
-   unreliable.
-
-6. **outlier_concerns** (default false): Set to true if there are signs of extreme outlier
-   influence — e.g., a single country driving the entire correlation, or the script does
-   not handle obvious outliers in the data.
+_VALIDATOR_SHARED_SECTIONS = """\
 
 ## Mechanistic Explanation
 
@@ -584,6 +557,93 @@ Return a single JSON object (NO markdown fences, NO commentary outside the JSON)
 }
 """
 
+VALIDATOR_SYSTEM_PROMPT = (
+    """\
+You are a quality-assurance reviewer for the EPI Proxy Discovery Pipeline.
+
+You receive the outputs of a verification agent that tested a proxy hypothesis.
+Your job is to review the agent's work and produce a structured quality annotation.
+You do NOT override the verdict — you only flag potential issues.
+
+## 6-Point Checklist
+
+For each point, set the boolean to false if you detect a problem:
+
+1. **no_synthetic_data** (default true): Set to false if the verify.py script generates
+   fake/simulated proxy data using np.random, random, synthetic formulas, or hardcoded arrays
+   instead of fetching real data. Loading from CSV/API is fine.
+
+2. **year_alignment_ok** (default true): Set to false if proxy and target data are joined
+   on mismatched years — e.g., using 2020 proxy values matched against 2010 target values,
+   or broadcasting a single year of proxy data across all target years. This is about
+   proxy-to-target temporal alignment, NOT about whether the data covers the full time
+   range in the hypothesis. If the available data is narrower than the hypothesis's
+   time_period but proxy and target years match correctly, that is fine.
+
+3. **hypothesis_interpretation_ok** (default true): Set to false if the agent tested a
+   materially different proxy variable than what the hypothesis specified (not just a
+   reasonable substitution, but a conceptually different variable).
+
+4. **data_source_authentic** (default true): Set to false if the proxy data did not come
+   from the source specified in the hypothesis and the substitution was not documented
+   in data_quality_notes.
+
+5. **country_coverage_adequate** (default true): Set to false if the merged dataset has
+   fewer than 15 countries or fewer than 20 observations, making statistical conclusions
+   unreliable.
+
+6. **outlier_concerns** (default false): Set to true if there are signs of extreme outlier
+   influence — e.g., a single country driving the entire correlation, or the script does
+   not handle obvious outliers in the data.
+"""
+    + _VALIDATOR_SHARED_SECTIONS
+)
+
+VALIDATOR_SYSTEM_PROMPT_DB = (
+    """\
+You are a quality-assurance reviewer for the EPI Proxy Discovery Pipeline.
+
+You receive the output of a DB-backed statistical verification of a proxy hypothesis.
+Your job is to review the statistical results and produce a structured quality annotation.
+You do NOT override the verdict — you only flag potential issues.
+
+## 6-Point Checklist
+
+For each point, set the boolean to false if you detect a problem:
+
+1. **no_synthetic_data** (default true): Always true for DB-verified hypotheses — data
+   was fetched from real external sources during Stage 1 and stored in the verification
+   database. There is no script that could fabricate data.
+
+2. **year_alignment_ok** (default true): Set to false if proxy and target data are joined
+   on mismatched years — e.g., using 2020 proxy values matched against 2010 target values,
+   or broadcasting a single year of proxy data across all target years. This is about
+   proxy-to-target temporal alignment, NOT about whether the data covers the full time
+   range in the hypothesis. If the available data is narrower than the hypothesis's
+   time_period but proxy and target years match correctly, that is fine.
+
+3. **hypothesis_interpretation_ok** (default true): Set to false if the DB query tested a
+   materially different proxy variable than what the hypothesis specified (not just a
+   reasonable substitution, but a conceptually different variable).
+
+4. **data_source_authentic** (default true): Set to false if the proxy variable ID used
+   in the verification clearly does not match the data source described in the hypothesis
+   — for example, the hypothesis describes pharmaceutical sales data but the DB variable
+   ID is a crop yield indicator. The variable ID's source-family prefix (e.g.
+   ``world_bank:``, ``who_gho:``) should align with the hypothesis's data source
+   organization.
+
+5. **country_coverage_adequate** (default true): Set to false if the merged dataset has
+   fewer than 15 countries or fewer than 20 observations, making statistical conclusions
+   unreliable.
+
+6. **outlier_concerns** (default false): Set to true if there are signs of extreme outlier
+   influence — e.g., a single country driving the entire correlation, or extreme skew
+   visible in the summary statistics.
+"""
+    + _VALIDATOR_SHARED_SECTIONS
+)
+
 _VALIDATION_AGENT_OUTPUT_LIMIT = 8000
 
 
@@ -632,6 +692,41 @@ def build_validation_prompt(
 ```
 {agent_output_contents}
 ```
+
+Review the above and return your quality annotation as a JSON object.
+"""
+
+
+def build_validation_prompt_from_db(
+    hypothesis_json: str,
+    result_json_contents: str,
+) -> str:
+    """Build a validation prompt for DB-verified hypotheses (no script artifacts).
+
+    Args:
+        hypothesis_json: JSON string of the ProxyHypothesis.
+        result_json_contents: Contents of result.json produced by DB verification.
+    """
+    return f"""\
+## Hypothesis
+
+```json
+{hypothesis_json}
+```
+
+## result.json (structured output — DB-backed verification)
+
+```json
+{result_json_contents}
+```
+
+## Verification Context
+
+This hypothesis was verified via the **DB-backed path** — proxy and target data were
+pre-fetched into a centralized DuckDB database during Stage 1 (discovery), then the
+full statistical battery (bivariate correlation, partial correlation controlling for
+GDP per capita, functional form testing) was run directly against DB-aligned data.
+No verification script was generated; ``verification_method`` is ``"db_statistical_test"``.
 
 Review the above and return your quality annotation as a JSON object.
 """
