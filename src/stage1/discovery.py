@@ -12,10 +12,7 @@ import logging
 import re
 from pathlib import Path
 
-import anthropic
-
 from src.config import (
-    ANTHROPIC_API_KEY,
     CLAUDE_DISCOVERY_MODEL,
     DB_PATH,
     DISCOVERY_MAX_TOOL_CALLS,
@@ -24,6 +21,7 @@ from src.config import (
 from src.schemas import ProxyHypothesis, ResearchOutput
 from src.stage1.prompts import DISCOVERY_SYSTEM_PROMPT, DISCOVERY_USER_PROMPT_TEMPLATE
 from src.stage1.tools import DISCOVERY_TOOLS, execute_tool
+from src.utils.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -106,85 +104,59 @@ async def run_discovery(
         domain_knowledge_section=domain_section,
     )
 
-    # Initialize Anthropic client
-    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+    # Initialize LLM client
+    client = LLMClient(trace_dir=OUTPUTS_DIR / tla)
     messages = [{"role": "user", "content": user_prompt}]
 
     tool_call_count = 0
     tool_log: list[dict] = []
-    total_input_tokens = 0
-    total_output_tokens = 0
-    total_cache_read_tokens = 0
-    total_cache_write_tokens = 0
 
     logger.info("Starting discovery agent for %s (max %d tool calls)", tla, max_tool_calls)
 
     # Agent loop
     while True:
-        response = await client.messages.create(
+        response = await client.chat_with_tools(
             model=CLAUDE_DISCOVERY_MODEL,
             max_tokens=8192,
             system=DISCOVERY_SYSTEM_PROMPT,
             tools=DISCOVERY_TOOLS,
             messages=messages,
         )
-        usage = response.usage
-        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
-        cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
-        total_input_tokens += usage.input_tokens
-        total_output_tokens += usage.output_tokens
-        total_cache_read_tokens += cache_read
-        total_cache_write_tokens += cache_write
+
         logger.info(
-            "usage: in=%d out=%d cache_read=%d cache_write=%d",
-            usage.input_tokens, usage.output_tokens, cache_read, cache_write,
+            "Agent response: stop_reason=%s, tool_uses=%d, text_len=%d",
+            response.stop_reason, len(response.tool_uses), len(response.text or ""),
         )
 
-        # Process response content blocks
-        assistant_content = response.content
-        tool_use_blocks = [b for b in assistant_content if b.type == "tool_use"]
-        text_blocks = [b for b in assistant_content if b.type == "text"]
-
-        # Log text output
-        for tb in text_blocks:
-            logger.debug("Agent text: %s", tb.text[:200])
-
         # If no tool use, we're done
-        if response.stop_reason == "end_turn" or not tool_use_blocks:
+        if response.stop_reason == "end_turn" or not response.tool_uses:
             logger.info("Discovery agent finished after %d tool calls", tool_call_count)
-            # Extract final JSON from the last text block
-            final_text = ""
-            for tb in text_blocks:
-                final_text += tb.text
+            final_text = response.text or ""
             break
 
         # Execute tool calls
-        messages.append({"role": "assistant", "content": assistant_content})
-        tool_results = []
+        messages.append(client.build_assistant_message(response))
+        tool_results_raw: list[tuple[str, str, str]] = []
 
-        for tool_block in tool_use_blocks:
+        for tu in response.tool_uses:
             tool_call_count += 1
             logger.info(
                 "Tool call %d/%d: %s(%s)",
                 tool_call_count, max_tool_calls,
-                tool_block.name, json.dumps(tool_block.input)[:100],
+                tu.name, json.dumps(tu.input)[:100],
             )
 
-            result_str = execute_tool(tool_block.name, tool_block.input, conn)
+            result_str = execute_tool(tu.name, tu.input, conn)
             tool_log.append({
                 "call_number": tool_call_count,
-                "tool": tool_block.name,
-                "input": tool_block.input,
+                "tool": tu.name,
+                "input": tu.input,
                 "result_preview": result_str[:200],
             })
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": tool_block.id,
-                "content": result_str,
-            })
+            tool_results_raw.append((tu.id, tu.name, result_str))
 
-        messages.append({"role": "user", "content": tool_results})
+        messages.extend(client.build_tool_result_messages(tool_results_raw))
 
         # Check budget
         if tool_call_count >= max_tool_calls:
@@ -198,17 +170,14 @@ async def run_discovery(
                 ),
             })
             # One more turn to get the final output
-            response = await client.messages.create(
+            response = await client.chat_with_tools(
                 model=CLAUDE_DISCOVERY_MODEL,
                 max_tokens=8192,
                 system=DISCOVERY_SYSTEM_PROMPT,
                 tools=DISCOVERY_TOOLS,
                 messages=messages,
             )
-            final_text = ""
-            for block in response.content:
-                if block.type == "text":
-                    final_text += block.text
+            final_text = response.text or ""
             break
 
     # Parse final output

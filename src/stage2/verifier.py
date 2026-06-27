@@ -1,4 +1,4 @@
-"""Stage 2: Hypothesis verification using Anthropic API + subprocess."""
+"""Stage 2: Hypothesis verification using LLM + subprocess."""
 
 import json
 import logging
@@ -8,12 +8,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-import anthropic
-
-from src.config import PROJECT_ROOT, RAW_DIR, OUTPUTS_DIR, ANTHROPIC_API_KEY, CLAUDE_VERIFICATION_MODEL
+from src.config import PROJECT_ROOT, RAW_DIR, OUTPUTS_DIR, CLAUDE_VERIFICATION_MODEL
 from src.schemas import ProxyHypothesis, VerificationMethod, VerificationResult, Verdict
-from src.stage2.prompts import VERIFIER_SYSTEM_PROMPT, build_verification_prompt
 from src.stage2.data_loader import prepare_verification_context
+from src.stage2.prompts import VERIFIER_SYSTEM_PROMPT, build_verification_prompt
+from src.utils.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ async def verify_hypothesis(
 
     logger.info("Verifying hypothesis %s in %s", hypothesis.id, output_dir)
 
-    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+    client = LLMClient(trace_dir=OUTPUTS_DIR / tla)
 
     script_path = output_dir / "verify.py"
     result_path = output_dir / "result.json"
@@ -89,16 +88,15 @@ async def verify_hypothesis(
     for attempt in range(1, MAX_RETRIES + 1):
         logger.info("Attempt %d/%d for %s", attempt, MAX_RETRIES, hypothesis.id)
 
-        # Ask Claude to generate the script
+        # Ask the LLM to generate the script
         try:
-            response = await client.messages.create(
+            response_text = await client.chat_completion(
                 model=CLAUDE_VERIFICATION_MODEL,
                 max_tokens=8192,
                 system=system_prompt,
                 messages=messages,
             )
-            response_text = response.content[0].text
-            agent_output_lines.append(f"=== Attempt {attempt} — Claude response ===")
+            agent_output_lines.append(f"=== Attempt {attempt} — LLM response ===")
             agent_output_lines.append(response_text)
         except Exception as e:
             logger.error("API call failed for %s (attempt %d): %s", hypothesis.id, attempt, e)

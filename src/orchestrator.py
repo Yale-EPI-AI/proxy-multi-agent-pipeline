@@ -7,15 +7,27 @@ import logging
 import sys
 import traceback
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse
 
 from rich.console import Console
-from rich.table import Table
 from rich.prompt import Prompt
+from rich.table import Table
 
-from src.config import OUTPUTS_DIR, DISCOVERY_MAX_TOOL_CALLS, MAX_HYPOTHESES
+from src.config import (
+    DISCOVERY_MAX_TOOL_CALLS,
+    LOCAL_ENGINE_ARGS,
+    LOCAL_ENGINE_TYPE,
+    LOCAL_INFERENCE_URL,
+    LOCAL_MODEL_NAME,
+    MAX_HYPOTHESES,
+    OUTPUTS_DIR,
+    USE_LOCAL_INFERENCE,
+)
 from src.schemas import EvidenceType, PipelineResult, ProxyHypothesis, ResearchOutput, VerificationMethod, VerificationResult, Verdict
-from src.utils.data_utils import load_variable_metadata, get_available_indicators
+from src.utils.data_utils import get_available_indicators, load_variable_metadata
+from src.utils.inference import SGLangEngine, VLLMEngine
 
 console = Console()
 logger = logging.getLogger("epi_proxy")
@@ -343,81 +355,126 @@ def print_summary(result: PipelineResult) -> None:
     console.print(f"  Dashboard: {OUTPUTS_DIR / result.indicator_tla / 'dashboard.html'}")
 
 
+@asynccontextmanager
+async def local_inference_context():
+    """Manage the lifecycle of the local inference engine if enabled."""
+    if not USE_LOCAL_INFERENCE:
+        yield
+        return
+
+    # If no engine type is specified, assume unmanaged mode (user provides URL)
+    if not LOCAL_ENGINE_TYPE or LOCAL_ENGINE_TYPE.lower() == "none":
+        logger.info("Using unmanaged local inference at %s", LOCAL_INFERENCE_URL)
+        yield
+        return
+
+    # Set optimization environment variables
+    import os
+    os.environ["TOKENIZERS_PARALLELISM"] = "true"
+    os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+
+    engine_cls = VLLMEngine if LOCAL_ENGINE_TYPE == "vllm" else SGLangEngine
+
+    # Use port from LOCAL_INFERENCE_URL as a starting hint
+    parsed = urlparse(LOCAL_INFERENCE_URL)
+    start_port = parsed.port or 8000
+
+    # Allow searching up to 100 ports starting from start_port
+    engine = engine_cls(first_port=start_port, last_port=start_port + 100)
+
+    console.print(f"[bold yellow]Starting local {LOCAL_ENGINE_TYPE} engine...[/bold yellow]")
+    ok = engine.start(LOCAL_MODEL_NAME, LOCAL_ENGINE_ARGS)
+    if not ok:
+        raise RuntimeError(f"Failed to start local inference engine {LOCAL_ENGINE_TYPE}")
+
+    # Dynamically update the config so LLMClient uses the discovered port
+    import src.config
+    src.config.LOCAL_INFERENCE_URL = engine.base_url
+    console.print(f"[bold green]Local engine active at {engine.base_url}[/bold green]")
+
+    try:
+        yield
+    finally:
+        console.print(f"[bold yellow]Stopping local {LOCAL_ENGINE_TYPE} engine...[/bold yellow]")
+        engine.stop()
+
+
 async def run_pipeline(args: argparse.Namespace) -> None:
     """Main pipeline orchestration."""
-    tla = args.indicator.upper()
-    setup_logging(tla, args.verbose)
+    async with local_inference_context():
+        tla = args.indicator.upper()
+        setup_logging(tla, args.verbose)
 
-    # Load metadata
-    try:
-        metadata = load_variable_metadata(tla)
-    except ValueError as e:
-        console.print(f"[red]Error: {e}[/red]")
-        sys.exit(1)
-
-    console.print(f"[bold]EPI Proxy Discovery Pipeline — {tla}[/bold]")
-    console.print(f"  {metadata.get('Description', tla)} ({metadata.get('Units', '')})")
-
-    research_output = None
-    hypotheses = []
-
-    # Stage 1
-    if args.stage in ("1", "both"):
-        max_tc = getattr(args, "max_tool_calls", DISCOVERY_MAX_TOOL_CALLS)
-        research_output = await run_stage1_discovery(tla, metadata, max_tc)
-        hypotheses = research_output.hypotheses
-
-    # Load pre-existing hypotheses if specified
-    if args.hypotheses_file:
-        hyp_path = Path(args.hypotheses_file)
-        if not hyp_path.exists():
-            console.print(f"[red]Hypotheses file not found: {hyp_path}[/red]")
+        # Load metadata
+        try:
+            metadata = load_variable_metadata(tla)
+        except ValueError as e:
+            console.print(f"[red]Error: {e}[/red]")
             sys.exit(1)
-        raw = json.loads(hyp_path.read_text(encoding="utf-8"))
-        research_output = ResearchOutput(
+
+        console.print(f"[bold]EPI Proxy Discovery Pipeline — {tla}[/bold]")
+        console.print(f"  {metadata.get('Description', tla)} ({metadata.get('Units', '')})")
+
+        research_output = None
+        hypotheses = []
+
+        # Stage 1
+        if args.stage in ("1", "both"):
+            max_tc = getattr(args, "max_tool_calls", DISCOVERY_MAX_TOOL_CALLS)
+            research_output = await run_stage1_discovery(tla, metadata, max_tc)
+            hypotheses = research_output.hypotheses
+
+        # Load pre-existing hypotheses if specified
+        if args.hypotheses_file:
+            hyp_path = Path(args.hypotheses_file)
+            if not hyp_path.exists():
+                console.print(f"[red]Hypotheses file not found: {hyp_path}[/red]")
+                sys.exit(1)
+            raw = json.loads(hyp_path.read_text(encoding="utf-8"))
+            research_output = ResearchOutput(
+                indicator_tla=tla,
+                hypotheses=[ProxyHypothesis.model_validate(h) for h in raw.get("hypotheses", [])],
+                causal_map_summary=raw.get("causal_map_summary", ""),
+                raw_report_path=str(hyp_path),
+            )
+            hypotheses = research_output.hypotheses
+            console.print(f"  Loaded {len(hypotheses)} hypotheses from {hyp_path}")
+
+        # Review
+        if args.review and hypotheses:
+            hypotheses = review_hypotheses(hypotheses)
+            if not hypotheses:
+                console.print("[yellow]No hypotheses selected. Exiting.[/yellow]")
+                return
+
+        # Stage 2
+        verification_results = []
+        if args.stage in ("2", "both") and hypotheses:
+            inclusion_mode = getattr(args, "inclusion_mode", None)
+            verification_results = await run_stage2(
+                tla, hypotheses, args.max_hypotheses,
+                inclusion_mode=inclusion_mode,
+            )
+
+        # Aggregate results
+        pipeline_result = PipelineResult(
             indicator_tla=tla,
-            hypotheses=[ProxyHypothesis.model_validate(h) for h in raw.get("hypotheses", [])],
-            causal_map_summary=raw.get("causal_map_summary", ""),
-            raw_report_path=str(hyp_path),
-        )
-        hypotheses = research_output.hypotheses
-        console.print(f"  Loaded {len(hypotheses)} hypotheses from {hyp_path}")
-
-    # Review
-    if args.review and hypotheses:
-        hypotheses = review_hypotheses(hypotheses)
-        if not hypotheses:
-            console.print("[yellow]No hypotheses selected. Exiting.[/yellow]")
-            return
-
-    # Stage 2
-    verification_results = []
-    if args.stage in ("2", "both") and hypotheses:
-        inclusion_mode = getattr(args, "inclusion_mode", None)
-        verification_results = await run_stage2(
-            tla, hypotheses, args.max_hypotheses,
-            inclusion_mode=inclusion_mode,
+            research_output=research_output,
+            verification_results=verification_results,
+            summary=f"Completed pipeline for {tla}: "
+            f"{len(hypotheses)} hypotheses, {len(verification_results)} verified",
         )
 
-    # Aggregate results
-    pipeline_result = PipelineResult(
-        indicator_tla=tla,
-        research_output=research_output,
-        verification_results=verification_results,
-        summary=f"Completed pipeline for {tla}: "
-        f"{len(hypotheses)} hypotheses, {len(verification_results)} verified",
-    )
+        # Save
+        output_path = OUTPUTS_DIR / tla / "pipeline_result.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(pipeline_result.model_dump_json(indent=2), encoding="utf-8")
 
-    # Save
-    output_path = OUTPUTS_DIR / tla / "pipeline_result.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(pipeline_result.model_dump_json(indent=2), encoding="utf-8")
+        from src.report import generate_dashboard
+        dashboard_path = generate_dashboard(pipeline_result)
+        console.print(f"  Dashboard: {dashboard_path}")
 
-    from src.report import generate_dashboard
-    dashboard_path = generate_dashboard(pipeline_result)
-    console.print(f"  Dashboard: {dashboard_path}")
-
-    print_summary(pipeline_result)
+        print_summary(pipeline_result)
 
 
 class _ListHandler(logging.Handler):
@@ -466,55 +523,56 @@ async def run_pipeline_headless(
         return "\n".join(lines)
 
     try:
-        # Load metadata
-        try:
-            metadata = load_variable_metadata(tla)
-        except ValueError as e:
-            yield (_log(f"ERROR: {e}"), None)
-            return
+        async with local_inference_context():
+            # Load metadata
+            try:
+                metadata = load_variable_metadata(tla)
+            except ValueError as e:
+                yield (_log(f"ERROR: {e}"), None)
+                return
 
-        desc = metadata.get("Description", tla)
-        units = metadata.get("Units", "")
-        yield (_log(f"=== EPI Proxy Discovery Pipeline — {tla} ==="), None)
-        yield (_log(f"  {desc} ({units})"), None)
+            desc = metadata.get("Description", tla)
+            units = metadata.get("Units", "")
+            yield (_log(f"=== EPI Proxy Discovery Pipeline — {tla} ==="), None)
+            yield (_log(f"  {desc} ({units})"), None)
 
-        # Stage 1
-        yield (_log(f"\n--- Stage 1: Discovery Agent for {tla} ---"), None)
-        research_output = await run_stage1_discovery(tla, metadata)
-        hypotheses = research_output.hypotheses
-        yield (_log(f"  Parsed {len(hypotheses)} hypotheses"), None)
+            # Stage 1
+            yield (_log(f"\n--- Stage 1: Discovery Agent for {tla} ---"), None)
+            research_output = await run_stage1_discovery(tla, metadata)
+            hypotheses = research_output.hypotheses
+            yield (_log(f"  Parsed {len(hypotheses)} hypotheses"), None)
 
-        # Stage 2
-        if hypotheses:
-            yield (_log(f"\n--- Stage 2: Verification for {tla} ---"), None)
-            verification_results = await run_stage2(tla, hypotheses)
-            yield (_log(f"  Verified {len(verification_results)} hypotheses"), None)
-        else:
-            verification_results = []
-            yield (_log("  No hypotheses to verify"), None)
+            # Stage 2
+            if hypotheses:
+                yield (_log(f"\n--- Stage 2: Verification for {tla} ---"), None)
+                verification_results = await run_stage2(tla, hypotheses)
+                yield (_log(f"  Verified {len(verification_results)} hypotheses"), None)
+            else:
+                verification_results = []
+                yield (_log("  No hypotheses to verify"), None)
 
-        # Aggregate
-        pipeline_result = PipelineResult(
-            indicator_tla=tla,
-            research_output=research_output,
-            verification_results=verification_results,
-            summary=f"Completed pipeline for {tla}: "
-            f"{len(hypotheses)} hypotheses, {len(verification_results)} verified",
-        )
+            # Aggregate
+            pipeline_result = PipelineResult(
+                indicator_tla=tla,
+                research_output=research_output,
+                verification_results=verification_results,
+                summary=f"Completed pipeline for {tla}: "
+                f"{len(hypotheses)} hypotheses, {len(verification_results)} verified",
+            )
 
-        # Save
-        output_path = OUTPUTS_DIR / tla / "pipeline_result.json"
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(pipeline_result.model_dump_json(indent=2), encoding="utf-8")
+            # Save
+            output_path = OUTPUTS_DIR / tla / "pipeline_result.json"
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(pipeline_result.model_dump_json(indent=2), encoding="utf-8")
 
-        # Dashboard
-        from src.report import generate_dashboard
+            # Dashboard
+            from src.report import generate_dashboard
 
-        dashboard_path = generate_dashboard(pipeline_result)
-        yield (_log(f"\n  Dashboard saved: {dashboard_path}"), None)
+            dashboard_path = generate_dashboard(pipeline_result)
+            yield (_log(f"\n  Dashboard saved: {dashboard_path}"), None)
 
-        dashboard_html = dashboard_path.read_text(encoding="utf-8")
-        yield ("\n".join(lines), dashboard_html)
+            dashboard_html = dashboard_path.read_text(encoding="utf-8")
+            yield ("\n".join(lines), dashboard_html)
 
     except Exception:
         yield (_log(f"\nERROR:\n{traceback.format_exc()}"), None)

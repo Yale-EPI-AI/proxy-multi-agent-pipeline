@@ -5,18 +5,17 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-import anthropic
-
 from src.config import (
-    ANTHROPIC_API_KEY,
     CLAUDE_VALIDATION_MODEL,
     INCLUSION_BINDING_MODE,
     INCLUSION_CRITICAL_CRITERIA,
     INCLUSION_SOFT_GATE_MIN_SCORE,
+    OUTPUTS_DIR,
     VALIDATION_MAX_TOKENS,
 )
 from src.schemas import InclusionCriteriaScore, ProxyHypothesis, ValidationAnnotation, Verdict, VerificationResult
 from src.stage2.prompts import VALIDATOR_SYSTEM_PROMPT, build_validation_prompt
+from src.utils.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -156,19 +155,19 @@ async def validate_result(
         agent_output_contents=agent_output,
     )
 
-    # Call Anthropic API (async)
-    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+    # Call the LLM (async)
+    trace_dir = OUTPUTS_DIR / hypothesis.target_variable
+    client = LLMClient(trace_dir=trace_dir)
 
-    logger.info("Validating %s with %s...", hypothesis.id, CLAUDE_VALIDATION_MODEL)
+    logger.info("Validating %s...", hypothesis.id)
 
-    response = await client.messages.create(
+    raw_text = await client.chat_completion(
         model=CLAUDE_VALIDATION_MODEL,
         max_tokens=VALIDATION_MAX_TOKENS,
         system=VALIDATOR_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
     )
 
-    raw_text = response.content[0].text
     raw_text = _strip_markdown_fences(raw_text)
 
     # Parse and validate
