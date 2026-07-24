@@ -17,82 +17,79 @@ ts_echo() {
 
 source .venv/bin/activate
 
-indicators=(
-    OEB
-    OEC
-    NXA
-    SDA
-    SNM
-    PSU
-    PRS
-    RCY
-    MKP
-    MHP
-    MPE
-    PAR
-    BER
-    SHI
-    SPI
-    PAE
-    PHL
-    TBN
-    TKP
-    RLI
-    PFL
-    IFL
-    FCL
-    TCG
-    FLI
-    FSS
-    FCD
-    BTZ
-    BTO
-    RMS
-    WWG
-    WWC
-    WWT
-    WWR
-    COE
-    HFD
-    HFX
-    NOD
-    NOE
-    OZD
-    OZE
-    HPE
-    SOE
-    VOE
-    LED
-    LEX
-    WPC
-    WRR
-    SMW
-    USD
-    UWD
-    USX
-    UWX
-    CDA
-    CDF
-    CHA
-    FGA
-    NDA
-    BCA
-    GHN
-    GHI
-    GHP
-    GHA
-    LUF
-    GTI
-    GTP
-    CBP
-)
+indicators_file=$(mktemp)
+cat >"$indicators_file" <<'EOF'
+BCA
+BER
+BTO
+BTZ
+CBP
+CDA
+CDF
+CHA
+COE
+FCD
+FCL
+FGA
+FLI
+FSS
+GHA
+GHI
+GHN
+GHP
+GTI
+GTP
+HFD
+HFX
+HPE
+IFL
+LED
+LEX
+LUF
+MHP
+MKP
+MPE
+NDA
+NOD
+NOE
+NXA
+OEB
+OEC
+OZD
+OZE
+PAE
+PAR
+PFL
+PHL
+PRS
+PSU
+RCY
+RLI
+RMS
+SDA
+SHI
+SMW
+SNM
+SOE
+SPI
+TBN
+TCG
+TKP
+USD
+USX
+UWD
+UWX
+VOE
+WPC
+WRR
+WWC
+WWG
+WWR
+WWT
+EOF
 
 export OUTPUTS_DIR=new-outputs
 
-ts_echo "Processing ${#indicators[@]} indicators"
-
-for ind in "${indicators[@]}"; do
-    ts_echo "Start processing indicator: ${ind}"
-    python -m src -i "${ind}"
-    ts_echo "End processing indicator: ${ind}"
-done
+ts_echo "Processing all indicators with shared inference engine"
+python -m src --indicators-file "$indicators_file"
+rm -f "$indicators_file"

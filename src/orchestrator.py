@@ -32,21 +32,44 @@ from src.utils.inference import SGLangEngine, VLLMEngine
 console = Console()
 logger = logging.getLogger("epi_proxy")
 
+_log_file_handlers: dict[str, logging.FileHandler] = {}
+
+
+def _init_root_logging(verbose: bool = False) -> None:
+    """Initialize root logger once with a StreamHandler to stderr."""
+    level = logging.DEBUG if verbose else logging.INFO
+    root = logging.getLogger()
+    root.setLevel(level)
+    if not root.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setLevel(level)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        )
+        root.addHandler(handler)
+
 
 def setup_logging(tla: str, verbose: bool = False) -> None:
-    """Configure logging to both console and file."""
+    """Add a TLA-specific file handler to the root logger."""
     level = logging.DEBUG if verbose else logging.INFO
     log_dir = OUTPUTS_DIR / tla
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stderr),
-            logging.FileHandler(log_dir / "pipeline.log", encoding="utf-8"),
-        ],
+    handler = logging.FileHandler(log_dir / "pipeline.log", encoding="utf-8")
+    handler.setLevel(level)
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     )
+    logging.getLogger().addHandler(handler)
+    _log_file_handlers[tla] = handler
+
+
+def teardown_logging(tla: str) -> None:
+    """Remove and close the TLA-specific file handler."""
+    handler = _log_file_handlers.pop(tla, None)
+    if handler:
+        logging.getLogger().removeHandler(handler)
+        handler.close()
 
 
 def list_indicators() -> None:
@@ -405,18 +428,16 @@ async def local_inference_context():
         engine.stop()
 
 
-async def run_pipeline(args: argparse.Namespace) -> None:
-    """Main pipeline orchestration."""
-    async with local_inference_context():
-        tla = args.indicator.upper()
-        setup_logging(tla, args.verbose)
-
+async def _run_pipeline_inner(tla: str, args: argparse.Namespace) -> None:
+    """Core pipeline logic for a single TLA (assumes engine context is active)."""
+    setup_logging(tla, args.verbose)
+    try:
         # Load metadata
         try:
             metadata = load_variable_metadata(tla)
         except ValueError as e:
             console.print(f"[red]Error: {e}[/red]")
-            sys.exit(1)
+            return
 
         console.print(f"[bold]EPI Proxy Discovery Pipeline — {tla}[/bold]")
         console.print(f"  {metadata.get('Description', tla)} ({metadata.get('Units', '')})")
@@ -435,7 +456,7 @@ async def run_pipeline(args: argparse.Namespace) -> None:
             hyp_path = Path(args.hypotheses_file)
             if not hyp_path.exists():
                 console.print(f"[red]Hypotheses file not found: {hyp_path}[/red]")
-                sys.exit(1)
+                return
             raw = json.loads(hyp_path.read_text(encoding="utf-8"))
             research_output = ResearchOutput(
                 indicator_tla=tla,
@@ -481,6 +502,25 @@ async def run_pipeline(args: argparse.Namespace) -> None:
         console.print(f"  Dashboard: {dashboard_path}")
 
         print_summary(pipeline_result)
+    finally:
+        teardown_logging(tla)
+
+
+async def run_pipeline(args: argparse.Namespace) -> None:
+    """Main pipeline orchestration for a single TLA."""
+    async with local_inference_context():
+        await _run_pipeline_inner(args.indicator.upper(), args)
+
+
+async def run_pipeline_multi(args: argparse.Namespace) -> None:
+    """Run pipeline for multiple TLAs, reusing the same inference engine."""
+    console.print(f"[bold]EPI Proxy Discovery Pipeline — {len(args.indicators)} indicators[/bold]")
+    async with local_inference_context():
+        for i, tla in enumerate(args.indicators, 1):
+            tla = tla.upper()
+            console.print(f"\n[bold cyan]=== [{i}/{len(args.indicators)}] {tla} ===[/bold cyan]")
+            await _run_pipeline_inner(tla, args)
+            console.print(f"[bold cyan]=== Completed {tla} [{i}/{len(args.indicators)}] ===[/bold cyan]")
 
 
 class _ListHandler(logging.Handler):
@@ -600,6 +640,16 @@ def main() -> None:
         help="EPI indicator TLA (e.g., UWD, WRR)",
     )
     parser.add_argument(
+        "--indicators", "-I",
+        type=str, nargs="+",
+        help="One or more EPI indicator TLAs (e.g., -I UWD WRR WPC)",
+    )
+    parser.add_argument(
+        "--indicators-file",
+        type=str,
+        help="Path to file with one TLA per line",
+    )
+    parser.add_argument(
         "--stage", "-s",
         choices=["1", "2", "both"],
         default="both",
@@ -650,7 +700,26 @@ def main() -> None:
         list_indicators()
         return
 
-    if not args.indicator:
-        parser.error("--indicator is required (or use --list-indicators)")
+    # Resolve indicator list from args or file
+    indicators: list[str] = []
+    if args.indicators_file:
+        p = Path(args.indicators_file)
+        if not p.exists():
+            parser.error(f"Indicators file not found: {args.indicators_file}")
+        indicators = [line.strip() for line in p.read_text().splitlines() if line.strip()]
+    elif args.indicators:
+        indicators = args.indicators
+    elif args.indicator:
+        indicators = [args.indicator]
 
-    asyncio.run(run_pipeline(args))
+    if not indicators:
+        parser.error("--indicator, --indicators, or --indicators-file is required")
+
+    _init_root_logging(args.verbose)
+
+    if len(indicators) == 1:
+        args.indicator = indicators[0]
+        asyncio.run(run_pipeline(args))
+    else:
+        args.indicators = indicators
+        asyncio.run(run_pipeline_multi(args))

@@ -94,7 +94,7 @@ class InferenceEngine(ABC):
         )
 
         # Wait for the engine to become responsive
-        max_wait = 300  # 5 minutes
+        max_wait = 1800
         start_time = time.time()
         while time.time() - start_time < max_wait:
             if self.process.poll() is not None:
