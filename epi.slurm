@@ -15,8 +15,6 @@ ts_echo() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') | ${*}"
 }
 
-source .venv/bin/activate
-
 indicators_file=$(mktemp)
 cat >"$indicators_file" <<'EOF'
 BCA
@@ -91,5 +89,5 @@ EOF
 export OUTPUTS_DIR=new-outputs
 
 ts_echo "Processing all indicators with shared inference engine"
-python -m src --indicators-file "$indicators_file"
+uv run epi-proxy --indicators-file "$indicators_file"
 rm -f "$indicators_file"

@@ -1,5 +1,5 @@
 [project]
-name = "epi-proxy-discovery"
+name = "epi-proxy"
 version = "0.1.0"
 description = "Multi-agent system for discovering data proxies for the Yale EPI"
 requires-python = ">=3.11"
@@ -17,8 +17,16 @@ dependencies = [
     "openai>=2.41.0",
     "google-genai>=2.8.0",
     "duckdb>=1.5.3",
+    "gradio>=4.0",
+    "networkx>=3.0",
+    "clingo>=5.6",
 ]
 
+[project.scripts]
+epi-proxy = "epi_proxy.orchestrator:main"
+epi-web = "web.app:main"
+epi-kg = "scripts.compile_knowledge_graph:main"
+
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.11.0,<0.12.0"]
+build-backend = "uv_build"

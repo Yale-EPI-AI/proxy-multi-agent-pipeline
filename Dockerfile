@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir . gradio
 # v3: academic theme migration
 EXPOSE 7860
 
-CMD ["python", "web/app.py"]
+CMD ["python", "src/web/app.py"]

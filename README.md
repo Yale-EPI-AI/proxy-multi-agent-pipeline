@@ -26,11 +26,11 @@ unzip docs/EPI2024_Work/EPI2024_Work.zip -d docs/
 export ANTHROPIC_API_KEY=...
 
 # Launch Gradio web UI
-uv run python web/app.py
+uv run epi-web
 # → opens at http://localhost:7860
 
 # Or run via CLI
-uv run python -m src -i WRR
+uv run epi-proxy -i WRR
 ```
 
 ## Architecture
@@ -48,6 +48,8 @@ uv run python -m src -i WRR
 
 The pipeline is model-agnostic, supporting cloud providers (Anthropic, OpenAI) as well
 as local open-weights models (DeepSeek, Qwen, GPT-OSS) via vLLM and SGLang.
+
+For comprehensive architectural deep dives, statistical testing protocols, verification vs. validation mechanics, and schema contracts, see **[docs/system_design.md](docs/system_design.md)**.
 
 ## Deployment (Hugging Face Spaces)
 
