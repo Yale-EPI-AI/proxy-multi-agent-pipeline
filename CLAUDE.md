@@ -1,10 +1,15 @@
 # EPI Data Proxy Discovery Pipeline
 
-## Notes on code exeuction etc
+## Notes on code execution & environment
 
-Always use the conda epi environment when running any code or downloading any packages.
+Always use `uv` for environment management and code execution (e.g. `uv run python ...` or `uv sync`).
 
-When pushing to Hugging Face Spaces, always push to the `main` branch: `git push hf master:main`. HF Spaces reads from `main`, not `master`.
+Before running the pipeline for the first time, ensure the raw EPI dataset archive is unzipped:
+```bash
+unzip docs/EPI2024_Work/EPI2024_Work.zip -d docs/
+```
+
+When pushing to Hugging Face Spaces, always push to the `main` branch: `git push hf master:main` or `git push hf main`. HF Spaces reads from `main`, not `master`.
 
 ## Project Overview
 
@@ -14,34 +19,42 @@ This project builds a **multi-agent system for discovering data proxies** for th
 
 ## Architecture: Two-Stage Pipeline
 
-### Stage 1: Deep Research Agent (Hypothesis Generation)
-A deep research agent performs literature review and data discovery for a given EPI indicator:
-- **Causal mapping**: Identifies upstream causes and downstream effects of the target indicator
-- **Literature-validated proxies**: Finds academic papers documenting proxy relationships (correlation, sample, caveats)
-- **Speculative proxies**: Brainstorms novel proxy candidates based on the causal map
-- **Data availability assessment**: Evaluates geographic coverage, temporal granularity, accessibility of proxy datasets
-- **Confounder analysis**: Identifies spurious correlation risks and validity conditions
+### Stage 1: Discovery Agent (Hypothesis Generation)
+A tool-using reasoning agent (`src/stage1/discovery.py`) explores real-world data APIs, fetches candidate proxy datasets into a centralized DuckDB (`outputs/epi_data.duckdb`), and emits structured *proxy hypotheses*:
+- **API Exploration**: Searches, previews, and fetches candidate time series across 9 source families (~30 tools in `src/stage1/tools.py`).
+- **Target & Control Seeding**: Target indicator data and standard control variables (`GPC`, `POP`, `URB`) are automatically pre-loaded into the DuckDB.
+- **In-Memory Pre-correlation**: Optionally tests correlation against the target before finalizing hypotheses.
+- **Structured Hypothesis Output**: Emits structured JSON adhering to the `ProxyHypothesis` schema, parsed and repaired via enum coercion (`_repair_hypothesis_enums`).
 
-### Stage 2: Code Agent (Hypothesis Verification)
-A code execution agent takes the structured output from Stage 1 and:
-- Downloads or loads proxy datasets and the corresponding EPI indicator data
-- Runs statistical tests (correlation, regression, Granger causality) to validate hypothesized proxy relationships
-- Handles data cleaning, alignment (country names, time periods), and normalization
-- Outputs confirmed/rejected hypotheses with statistical evidence
+### Stage 2: Verification & Validation
+Stage 2 validates candidate hypotheses using statistical testing and multi-criteria audit:
+- **Routing by Evidence Type**:
+  - `programmatic_verify`: Data is fetchable or already fetched in DuckDB.
+    - **DB-backed deterministic path** (`verify_hypothesis_from_db` via `src/utils/db_stats.py`): Runs the full statistical protocol directly from DuckDB (fast, deterministic, zero LLM tokens).
+    - **Agent code-generation path** (`verify_hypothesis` in `src/stage2/verifier.py`): The LLM generates `verify.py`, executed via `subprocess.run` with a 3-attempt retry loop on errors/timeouts.
+  - `manual_data_needed`: Exploratory prompt assessing data acquisition steps.
+  - `literature_attested`: Corroboration prompt validating literature citations and reported metrics.
+- **Statistical Protocol**:
+  - Pearson ($r$) & Spearman ($\rho$) correlation with significance ($p$-values) and sample size checks ($n \ge 20$).
+  - Partial correlation controlling for log(GDP per capita), population, and urbanization via `pingouin`.
+  - Functional form fitting: linear, log-linear, and quadratic models compared via AIC (`test_functional_form()`).
+  - Decision tree verdict assignment: `confirmed`, `partially_confirmed`, `inconclusive`, or `rejected`.
+- **Validation & Inclusion Gate**:
+  - An LLM validator (`src/stage2/validator.py`) evaluates 10 inclusion criteria (`spatial_completeness`, `open_access`, `recency`, `documented_methodology`, `signal_independence`, etc.).
+  - Configurable binding mode (`advisory`, `soft_gate`, `hard_gate`).
+  - Special escalation for GDP-imputed indicators (`GDP_IMPUTATION_DEPENDENT`, e.g. WRR): flags proxies lacking signal independence.
 
 ## Hypothesis Formalization (DiscoveryBench-inspired)
 
-Each proxy hypothesis follows the structured formalism h = ψ(c, v, r):
-- **Context (c)**: Boundary conditions — e.g., "across countries with GDP > $5000, 2010-2020"
-- **Variables (v)**: Target EPI indicator + candidate proxy variable(s)
-- **Relationship (r)**: The nature of the statistical link — e.g., "positive linear correlation (r=0.72)", "log-linear"
+Each proxy hypothesis follows the structured formalism $h = \psi(c, v, r)$:
+- **Context ($c$)**: Boundary conditions — e.g., "across countries with GDP > $5000, 2010-2020"
+- **Variables ($v$)**: Target EPI indicator + candidate proxy variable(s)
+- **Relationship ($r$)**: The nature of the statistical link — e.g., "positive linear correlation (r=0.72)", "log-linear"
 
 Hypotheses form a **semantic tree** where:
 - **Root**: The target EPI indicator (e.g., UWD — unsafe drinking water)
 - **Internal nodes**: Intermediate causal/mechanistic variables
 - **Leaves**: Observable, accessible proxy data sources
-
-This formalism provides a structured contract between Stage 1 (generates hypotheses) and Stage 2 (verifies them).
 
 ## Priority Indicators for Proxy Discovery
 
@@ -77,87 +90,100 @@ Based on analysis of the EPI 2024 Technical Appendix (country coverage, imputati
 
 ### Statistical Verification (Stage 2)
 - **Bivariate correlation**: Pearson + Spearman, with direction and significance checks
-- **Partial correlation**: Controls for log(GDP per capita) via `pingouin`
+- **Partial correlation**: Controls for log(GDP per capita), population, urbanization via `pingouin`
 - **Functional form testing**: Fits linear, log-linear, and quadratic models; selects best via AIC comparison (`test_functional_form()` in `src/utils/stats.py`)
 - **Verdict thresholds**: Confirmed (|r|>0.3, p<0.05, partial significant), Partially Confirmed, Inconclusive (n<20 or borderline p), Rejected (p>0.10 or wrong direction)
-- The verification agent (Claude Code SDK) writes `verify.py` + `result.json` per hypothesis
-
-### Relationship Extraction (Stage 1)
-- Parse prompt enforces: no `direction="unknown"` when mechanism exists (infer from causal link), default `functional_form="linear"` unless evidence of non-linearity, aggressive strength estimate extraction
-- Research prompt asks for expected functional form in both literature-validated and speculative proxies
 
 ### Domain Knowledge Injection (Stage 1)
-- `src/domain_knowledge.py` maps all 58 indicator TLAs → domain context strings (indicator definition, imputation model, known confounders, data quality issues, sibling relationships)
-- Injected into Gemini deep research prompt as "Domain Context" section when available
-- Entries validated against Technical Appendix PDF + `master_variable_list.csv`; process documented in `docs/domain_knowledge_process.txt`
+- `src/domain_knowledge.py` maps **all 58 indicator TLAs** → domain context strings (indicator definition, imputation model, known confounders, data quality issues, sibling relationships)
+- Injected into the Discovery agent prompt as "Domain Context" section
+- `GDP_IMPUTATION_DEPENDENT` set identifies indicators (like `WRR`) whose official EPI score is derived from GDP regressions
 
 ### Key Source Files
-- `src/schemas.py` — Pydantic v2 models: `ProxyHypothesis`, `VerificationResult`, `FunctionalFormResult`, `InclusionCriteriaScore` (10 criteria, `documented_methodology` renamed from `established_methodology`)
-- `src/utils/stats.py` — `run_bivariate_correlation()`, `run_partial_correlation()`, `test_functional_form()`, `determine_verdict()`, `build_result_json()`
-- `src/utils/data_utils.py` — `load_raw_indicator()` (CSV→long format, sentinel→NaN)
-- `src/utils/data_fetch.py` — 9 source families (World Bank, WHO GHO, NASA POWER, Comtrade, Wikipedia, OpenAQ, GEE, GDELT BQ, FAOSTAT-offline) exposed as `search_*`/`preview_*`/`fetch_*`/`fetch_and_store_*`
-- `src/stage1/research.py` — Gemini Deep Research API calls (~$4/indicator, uses `deep-research-pro-preview-12-2025`)
+- `src/schemas.py` — Pydantic v2 models: `ProxyHypothesis`, `VerificationResult`, `FunctionalFormResult`, `InclusionCriteriaScore` (10 criteria)
+- `src/config.py` — Paths, API keys, model names, thresholds (`INCLUSION_CRITICAL_CRITERIA=[spatial_completeness, open_access]`, `DISCOVERY_MAX_TOOL_CALLS=80`)
+- `src/orchestrator.py` — CLI (`python -m src`) and programmatic runner (`run_pipeline`, `run_pipeline_multi`, `run_pipeline_headless`)
+- `src/stage1/discovery.py` — Stage 1 tool-calling discovery agent loop and enum-repair parser
 - `src/stage1/tools.py` — 30 discovery-agent tools (3 per source × 9 sources + 3 DB tools)
-- `src/stage1/parser.py` — Claude-based structured extraction from research reports
-- `src/stage2/verifier.py` — Claude Code SDK agent orchestration
-- `src/stage2/prompts.py` — Verification prompt templates + validator prompt (10 inclusion criteria including `signal_independence`)
-- `src/stage2/validator.py` — Post-verification validation + inclusion-gate logic (GDP-imputation-dependent escalation for WRR)
-- `src/domain_knowledge.py` — Tier 1 indicator domain context + `GDP_IMPUTATION_DEPENDENT` set
-- `src/config.py` — Paths, API keys, model names, thresholds. `INCLUSION_CRITICAL_CRITERIA=[spatial_completeness, open_access]` (methodology is advisory as of 2026-04-13). `DISCOVERY_MAX_TOOL_CALLS=80`.
+- `src/stage1/prompts.py` — Discovery agent system prompt and indicator template
+- `src/stage2/verifier.py` — Stage 2 verification runner: DB deterministic path + LLM subprocess execution retry loop
+- `src/stage2/validator.py` — Post-verification validation + inclusion-gate logic
+- `src/stage2/prompts.py` — Verification, exploratory, corroboration, and validation prompt templates
+- `src/stage2/data_loader.py` — Target coverage summary for verification prompts
+- `src/utils/db.py` — DuckDB manager (`variables`, `observations`, `fetch_log`, variable alignment)
+- `src/utils/db_stats.py` — Deterministic DB-backed statistical verification runner (`run_full_verification`)
+- `src/utils/stats.py` — Core statistical tests: bivariate, partial correlation, AIC functional form, verdict logic
+- `src/utils/data_fetch.py` — 9 external source families (World Bank, WHO GHO, NASA POWER, Comtrade, Wikipedia, OpenAQ, GEE, GDELT BQ, FAOSTAT-offline)
+- `src/utils/llm.py` — Unified LLM client supporting Anthropic, OpenAI, and local endpoints with trace logging (`llm_traces.jsonl`)
+- `src/utils/inference.py` — Local inference engine lifecycle management (vLLM and SGLang)
+- `src/report.py` — Self-contained HTML dashboard generator
+- `src/report_compare.py` — Multi-model comparison matrix dashboard generator
 
-### External API setup (novel sources)
-- **Wikipedia Pageviews** — no auth; `docs/wiki_country_projects.json` maps ISO3 → primary Wikipedia language edition. Countries sharing en/es/fr/ar/pt/ru/zh receive identical values (flagged in the tool description).
-- **UN Comtrade** — free subscription key at <https://comtradedeveloper.un.org/>; stored as `COMTRADE_API_KEY` in `.env`. Free tier: 500 requests/day. Retry-on-429 built into `_fetch_comtrade_one_year`. HS catalog cached at `src/utils/comtrade_hs_catalog.json`.
-- **OpenAQ v3** — free key at <https://explore.openaq.org/> account; stored as `OPENAQ_API_KEY`. 2000 requests/day. Full EPI backfill (~4300 calls) exceeds the free tier — spread across multiple days or use `max_sensors_per_country` to cap.
-- **Google Earth Engine** — user auth via `earthengine authenticate`; credentials at `~/.config/earthengine/credentials`; project ID in `GEE_PROJECT` (not an API key, despite the dotfile naming). Scale floor is 50 km (25 km and 10 km were tested but S5P NO2 global aggregation exceeded the 4-min timeout at those scales; see comment in `data_fetch.py` near `_GEE_SCALE_METERS`).
-- **GDELT GKG (BigQuery)** — service account JSON on disk, path in `GOOGLE_APPLICATION_CREDENTIALS`. Billing must be enabled on the GCP project even for the free tier. First 1 TB/month scanned is free; default year range `(2020, 2024)` is ~2.4 TB cost/backfill.
-- **FAOSTAT** — API host currently offline; all `*_faostat` tools short-circuit with a clear error (see `src/stage1/tools.py`).
+### External API Setup
+- **Wikipedia Pageviews** — no auth required; Wikimedia pageviews REST API.
+- **UN Comtrade** — free key at <https://comtradedeveloper.un.org/>; stored as `COMTRADE_API_KEY` in `.env` (500 requests/day). HS catalog cached at `src/utils/comtrade_hs_catalog.json`.
+- **OpenAQ v3** — free key at <https://explore.openaq.org/>; stored as `OPENAQ_API_KEY` (2000 requests/day).
+- **Google Earth Engine** — authenticate via `earthengine authenticate`; credentials at `~/.config/earthengine/credentials`; project ID in `GEE_PROJECT`. Scale floor is 50 km.
+- **GDELT GKG (BigQuery)** — service account JSON on disk, path in `GOOGLE_APPLICATION_CREDENTIALS`. First 1 TB/month free.
+- **FAOSTAT** — API host currently offline; short-circuits gracefully with an informative error.
+
+### Local Inference Support
+Run fully local open-weights models (e.g. `openai/gpt-oss-120b`, `deepseek-ai/DeepSeek-V3`) using vLLM or SGLang:
+- Set `USE_LOCAL_INFERENCE=true` and `LOCAL_ENGINE_TYPE=vllm` (or `sglang`) in `.env`
+- The orchestrator automatically launches the engine, finds an open port, waits for health check responsiveness, and shuts down on completion.
 
 ### Knowledge Graph
 - `src/knowledge_graph/` — NetworkX graph + clingo ASP reasoning over pipeline outputs
 - `scripts/compile_knowledge_graph.py` — Standalone script: builds graph, runs reasoning, exports to `outputs/knowledge_graph/`
-- Run via: `conda run -n epi python scripts/compile_knowledge_graph.py`
-- Dependencies: `networkx`, `clingo` (installed in epi conda env)
-- The knowledge graph is a post-hoc analysis tool — it does NOT modify the pipeline or orchestrator
+- Run via: `uv run python scripts/compile_knowledge_graph.py`
+- Read-only analysis tool — does NOT modify the pipeline or orchestrator.
 
 ## Key Directories
 
-- `docs/` — Reference documents (EPI technical appendix, DiscoveryBench paper, EPI data)
+- `docs/` — Reference documents (EPI technical appendix, system design)
+- `outputs/` — Run outputs per indicator (`outputs/{TLA}/pipeline_result.json`, `dashboard.html`, `stage1/`, `stage2/`)
+- `outputs/epi_data.duckdb` — Persistent central DuckDB caching fetched time series across runs
 - `outputs/knowledge_graph/` — Graph exports (graph.json, graph.html, graph.graphml, summary.md)
-- `scripts/` — Standalone utility scripts (not part of the pipeline)
+- `scripts/` — Standalone utility scripts (`compile_knowledge_graph.py`, `render_llm_traces.py`, `build_model_comparison.py`, `test_data_sources.py`)
 - `docs/EPI2024_Work/` — Full EPI 2024 data pipeline and raw data
   - `Inputs/master_variable_list.csv` — All 58+ EPI indicators with metadata (source, units, processing)
   - `Inputs/MasterFile.csv` — Authoritative list of 180 countries with ISO codes
-  - `Inputs/weights2024.csv` — Indicator weights for aggregation
-  - `Raw/` — 312 cleaned data files ready for the EPI pipeline (one per variable, format: `{TLA}_raw.csv`)
-  - `Source/` — Original source data and processing scripts (R)
-  - `PScripts/` — Pipeline scripts (P0_Master.R through P9), R-based
-  - `POutputs/EPI_results.csv` — Final indicator scores for all 180 countries
-  - `POutputs/Targets.csv` — Best/worst targets for normalization (68 indicators)
-  - `P1_Complete/` through `P6_Aggregation/` — Pipeline intermediate outputs
+  - `Raw/` — Cleaned data files ready for the EPI pipeline (`{TLA}_raw.csv`)
+- `web/` — Gradio web application (`web/app.py`)
 
-## EPI Data Format
+## Common Commands
 
-- Raw data CSVs: rows = countries (code, iso, country), columns = years (e.g., `UWD.raw.1990` ... `UWD.raw.2021`)
-- Missing value codes: `-9999` (missing in source), `-8888` (country not in source), `-7777` (not material, e.g. fisheries for landlocked countries)
-- 180 countries tracked; ~40 additional territories excluded due to data sparseness
-- EPI pipeline is R-based; proxy validation code should be Python for broader compatibility
+```bash
+# Install dependencies
+uv sync
 
-## EPI Data Sources (99 TLA/source entries)
+# Unzip EPI reference data (first-time setup)
+unzip docs/EPI2024_Work/EPI2024_Work.zip -d docs/
 
-Key source organizations and frequency:
-- OECD (8), IHME (7), Global Forest Watch (7), World Bank/What a Waste (6), Sea Around Us (5), Copernicus (5), UNEP-WCMC (5), FAOSTAT (4), Jones et al./PANGAEA (4), Worldwide Governance Indicators (4), PRIMAP-hist (3), CEDS (3), UN Statistics Division (3)
+# List available indicators
+uv run python -m src --list-indicators
 
-Almost all 99 data source entries have publicly accessible URLs. Exceptions requiring special access: PAR (CSIRO, personal communication), SHI/SPI (Map of Life, personal communication), some GFW data (personal communication but viewable online), IHME data (free account required).
+# Run full pipeline on an indicator
+uv run python -m src -i WRR
 
-## EPI Indicator Structure
+# Run multiple indicators in batch
+uv run python -m src -I WRR UWD WPC
 
-The EPI is organized hierarchically:
-- **Policy Objectives**: Environmental Health (HLT, 25%), Ecosystem Vitality (ECO, 45%), Climate Change (PCC, 30%)
-- **Issue Categories** (11): Air Quality, Sanitation & Drinking Water, Heavy Metals, Waste Management, Biodiversity & Habitat, Forests, Fisheries, Air Pollution, Agriculture, Water Resources, Climate Change Mitigation
-- **Indicators**: 58+ specific measurable indicators, each with a three-letter abbreviation (TLA)
+# Run Stage 2 only with pre-existing hypotheses
+uv run python -m src -i WRR --stage 2 --hypotheses-file outputs/WRR/stage1/hypotheses.json
+
+# Launch Gradio Web UI
+uv run python web/app.py
+
+# Render LLM traces to HTML
+uv run python scripts/render_llm_traces.py outputs/WRR/llm_traces.jsonl
+
+# Build cross-model comparison dashboard
+uv run python scripts/build_model_comparison.py
+```
 
 ## Gotchas
-- NetworkX `write_graphml` fails on Pydantic enum values — must flatten to `.value` strings before export
-- Cytoscape.js `tap` events conflict with COSE layout animation — use `click` events instead, or use a flag to prevent background click from swallowing node clicks
-- Gemini Deep Research costs ~$4/call — 5 pipeline runs = ~$20. No free tier for this agent.
+- NetworkX `write_graphml` fails on Pydantic enum values — flatten to `.value` strings before export
+- Cytoscape.js `tap` events conflict with COSE layout animation — use `click` events instead
+- `verify.py` subprocess execution runs with `cwd=PROJECT_ROOT` so Python imports `from src.utils...` work reliably
+- LLM enum drift is normal: the discovery parser coerces natural-language values before Pydantic validation via `_repair_hypothesis_enums`
