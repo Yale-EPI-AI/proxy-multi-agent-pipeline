@@ -86,8 +86,19 @@ WWR
 WWT
 EOF
 
-export OUTPUTS_DIR=new-outputs
+# Variables exported here override values in the .env file.
+# Edit these variables directly before submitting the job
 
-ts_echo "Processing all indicators with shared inference engine"
+# export USE_LOCAL_INFERENCE=true
+# export LOCAL_MODEL_NAME="openai/gpt-oss-120b"
+# export LOCAL_ENGINE_TYPE="vllm"
+# export LOCAL_ENGINE_ARGS="--tool-call-parser openai --enable-auto-tool-choice --enable-chunked-prefill --enable-prefix-caching --async-scheduling"
+
+export OUTPUTS_DIR="new-outputs"
+
+mkdir -p logs "$OUTPUTS_DIR"
+
+ts_echo "Processing indicators with model: $LOCAL_MODEL_NAME"
+ts_echo "Outputs directory: $OUTPUTS_DIR"
 uv run epi-proxy --indicators-file "$indicators_file"
 rm -f "$indicators_file"

@@ -8,6 +8,10 @@ For domain context on the EPI itself, see `CLAUDE.md` and `src/epi_proxy/domain_
 
 ---
 
+---
+
+# Part I: Overview & Architecture
+
 ## 1. What the System Does
 
 The Yale **Environmental Performance Index (EPI)** ranks 180 countries across 58+ environmental indicators. Many of those indicators are weak: poor country coverage, infrequent updates, or values that are *modeled/imputed* rather than directly measured. (Example: the Waste Recovery Rate indicator, WRR, has 56 countries imputed.)
@@ -25,7 +29,86 @@ Outputs are aggregated into a JSON result and an HTML dashboard, and (optionally
 
 ---
 
-## 2. Workflow in Plain Language
+---
+
+## 2. Component Diagram
+
+```
+                                  ┌──────────────────────────────────────────────┐
+                                  │                 ENTRY POINTS                 │
+                                  │                                              │
+                                  │   CLI: uv run epi-proxy -i WRR               │
+                                  │   Web: src/web/app.py  (Gradio, HF Spaces)   │
+                                  └───────────────────────┬──────────────────────┘
+                                                          │
+                                                          v
+                               ┌────────────────────────────────────────────────────┐
+                               │            src/epi_proxy/orchestrator.py           │
+                               │   run_pipeline() / run_pipeline_headless()         │
+                               │   • local_inference_context (vLLM / SGLang)        │
+                               │   • load metadata   • seed DB   • route stages     │
+                               │   • aggregate → PipelineResult   • build dashboard │
+                               └───────┬───────────────────────────────┬────────────┘
+                                       │                               │
+               ┌───────────────────────┘                               └───────────────────────┐
+               v                                                                               v
+┌──────────────────────────────────────┐                         ┌──────────────────────────────────────────────────┐
+│         STAGE 1 — DISCOVERY          │                         │            STAGE 2 — VERIFICATION                │
+│  src/epi_proxy/stage1/discovery.py   │                         │  src/epi_proxy/stage2/verifier.py                │
+│                                      │                         │                                                  │
+│  Tool-calling agent loop:            │                         │  Partition hypotheses by evidence_type:          │
+│    search → preview → fetch → corr   │                         │   ┌─ programmatic_verify                         │
+│    (≤ DISCOVERY_MAX_TOOL_CALLS=80)   │                         │   │    • DB-backed (deterministic)               │
+│                                      │                         │   │      run_full_verification()                 │
+│  Tools (30):                         │                         │   │                                              │
+    src/epi_proxy/stage1/tools.py      │                         │   │    • else LLM Script Generator               │
+│   3 per source × 9 sources + 3 DB    │                         │   │      writes & runs verify.py                 │
+│        │                             │                         │   ├─ manual_data_needed → exploratory            │
+│        v                             │                         │   └─ literature_attested → corroboration         │
+│  src/epi_proxy/utils/data_fetch.py   │                         │            │                                     │
+│   World Bank · WHO GHO · NASA POWER  │                         │            v                                     │
+│   Comtrade · Wikipedia · OpenAQ      │                         │  src/epi_proxy/utils/stats.py + db_stats.py      │
+│   GEE · GDELT(BQ) · FAOSTAT(offline) │                         │   bivariate · partial · functional form          │
+│        │                             │                         │   → determine_verdict()                          │
+│        v   parse + enum-repair       │                         │            │                                     │
+│  ResearchOutput{ ProxyHypothesis[] } │ ── hypotheses (JSON) ─> │            v                                     │
+└──────────────┬───────────────────────┘                         │  src/epi_proxy/stage2/validator.py (LLM Auditor) │
+               │                                                 │   10 inclusion criteria → ValidationAnnotation   │
+               │                                                 │   inclusion gate (advisory/soft/hard)            │
+               │                                                 └──────────────────┬───────────────────────────────┘
+               │                                                                    │
+               v                                                                    v
+        ┌──────────────────────────────────────────────────────────────────────────────────┐
+        │                          CENTRAL DATA LAYER (src/epi_proxy/utils/db.py)          │
+        │   DuckDB @ outputs/epi_data.duckdb                                               │
+        │   variables · observations(country,year,value) · fetch_log                       │
+        │   register_variable · upsert_observations · align_variables · get_observations   │
+        └──────────────────────────────────────────────────────────────────────────────────┘
+               │                                                                   │
+               v                                                                   v
+   ┌───────────────────────────┐                                   ┌───────────────────────────────────────────┐
+   │  EPI reference data       │                                   │            OUTPUTS                        │
+   │  docs/EPI2024_Work/       │                                   │  outputs/{TLA}/                           │
+   │   Inputs/  Raw/{TLA}_raw  │                                   │   pipeline_result.json · dashboard.html   │
+   │   (loaded via data_utils) │                                   │   pipeline.log · llm_traces.jsonl         │
+   │                           │                                   │   stage1/{discovery_output,hypotheses}    │
+   │                           │                                   │   stage2/{HYP-ID}/{verify.py,result.json} │
+   └───────────────────────────┘                                   └───────────────────────────────────────────┘
+                                                                                   │
+                                                                                   v
+                               ┌───────────────────────────────────────────────────────────────────────────┐
+                               │   POST-HOC: KNOWLEDGE GRAPH & COMPARISONS                                 │
+                               │   src/scripts/compile_knowledge_graph.py  (NetworkX + clingo ASP)         │
+                               │   src/scripts/build_model_comparison.py   (Cross-model matrix dashboard)  │
+                               │   src/scripts/render_llm_traces.py        (Trace HTML visualizer)         │
+                               └───────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+---
+
+## 3. Workflow in Plain Language
 
 A run targets **one or more EPI indicators**, identified by three-letter abbreviations (TLAs), e.g. `WRR` or `-I WRR UWD WPC`.
 
@@ -54,11 +137,15 @@ A run targets **one or more EPI indicators**, identified by three-letter abbrevi
 
 ---
 
-## 3. Stage 1 Deep Dive — Discovery Agent & API Exploration
+---
+
+# Part II: Subsystem Deep Dives
+
+## 4. Stage 1 Deep Dive — Discovery Agent & API Exploration
 
 Stage 1 is responsible for **autonomous hypothesis generation grounded in real-world data**. Rather than performing unconstrained open-ended brainstorming, the Discovery Agent acts as an active data scientist: searching real APIs, previewing metadata, fetching actual time-series observations into DuckDB, and testing preliminary correlations before formalizing hypotheses.
 
-### 3.1 Pre-Seeding Ground Truth and Confounders
+### 4.1 Pre-Seeding Ground Truth and Confounders
 Before the discovery agent starts its loop, the orchestrator seeds two critical baselines into the central DuckDB (`outputs/epi_data.duckdb`):
 1. **Target Indicator Time Series (`epi:{TLA}`)**: The historical values of the target EPI indicator across all 180 countries and available years (e.g. 1990–2021).
 2. **Standard Control Variables (`epi:GPC`, `epi:POP`, `epi:URB`)**:
@@ -68,7 +155,7 @@ Before the discovery agent starts its loop, the orchestrator seeds two critical 
 
 Pre-loading these ensures that any candidate proxy dataset fetched by the agent can be immediately joined and statistically compared against both the target and the key socioeconomic confounders.
 
-### 3.2 Domain Knowledge Injection
+### 4.2 Domain Knowledge Injection
 The agent is primed with structured domain context from `src/epi_proxy/domain_knowledge.py` covering all 58 EPI indicators:
 - Official indicator definition, mathematical formula, units, and transformation (e.g., $\ln(x)$).
 - Imputation methodology and known limitations (e.g., whether the official score relies on regression models).
@@ -77,7 +164,7 @@ The agent is primed with structured domain context from `src/epi_proxy/domain_kn
 
 This prevents the agent from re-discovering trivial facts and focuses its reasoning on novel proxy mechanisms.
 
-### 3.3 The Tool-Use Exploration Loop
+### 4.3 The Tool-Use Exploration Loop
 The discovery agent operates in an autonomous tool-calling loop (capped by `DISCOVERY_MAX_TOOL_CALLS`, default 80), supported by ~30 tools across **9 data source families**:
 - **World Bank Development Indicators**: Global economic, infrastructure, and demographic indicators.
 - **WHO Global Health Observatory (GHO)**: Disease burden, mortality rates, and health system metrics.
@@ -95,14 +182,16 @@ The agent follows an iterative exploration pattern:
 3. `fetch_and_store_*`: Download full global time series and register them into DuckDB (`outputs/epi_data.duckdb`).
 4. `correlate_variables`: Test in-memory bivariate and partial correlations against the target indicator directly in DuckDB.
 
-### 3.4 Structured Hypothesis Output & Enum Coercion
+### 4.4 Structured Hypothesis Output & Enum Coercion
 Upon exhausting its tool budget or satisfying its exploration goals, the agent emits a structured JSON block containing a list of `ProxyHypothesis` objects ($h = \psi(c, v, r)$).
 
 Because LLMs frequently invent natural-language enum variations (e.g., `"high"` for confidence, `"administrative"` for methodology), the parser runs an automated coercion routine (`_repair_hypothesis_enums`) before Pydantic schema validation. This ensures minor string variations are mapped to canonical schema values without discarding high-quality hypotheses.
 
 ---
 
-## 4. Stage 2 Deep Dive — Verification vs. Validation
+---
+
+## 5. Stage 2 Deep Dive — Verification vs. Validation
 
 Stage 2 tests and audits candidate hypotheses. A foundational design principle of this pipeline is the **strict architectural separation between Verification and Validation**:
 
@@ -112,15 +201,15 @@ Stage 2 tests and audits candidate hypotheses. A foundational design principle o
                               └────────────────────────┬─────────────────────────┘
                                                        │
                                                        v
-                   ┌────────────────────────────────────────────────────────────────────────┐
-                   │                     STEP 1: VERIFICATION (The Math)                    │
+                   ┌─────────────────────────────────────────────────────────────────────────┐
+                   │                     STEP 1: VERIFICATION (The Math)                     │
                    │  "Does the empirical data support the hypothesized relationship?"       │
-                   │                                                                        │
+                   │                                                                         │
                    │  • Bivariate Pearson (r) & Spearman (ρ) correlation                     │
                    │  • Pingouin partial correlation controlling for log(GDP), Pop, Urban    │
                    │  • Functional form fitting (Linear vs. Log-Linear vs. Quadratic by AIC) │
-                   │  • Deterministic Decision Tree Verdict Assignment                      │
-                   └───────────────────────────────────┬────────────────────────────────────┘
+                   │  • Deterministic Decision Tree Verdict Assignment                       │
+                   └───────────────────────────────────┬─────────────────────────────────────┘
                                                        │
                                                        │  VerificationResult (Initial Verdict)
                                                        v
@@ -136,11 +225,11 @@ Stage 2 tests and audits candidate hypotheses. A foundational design principle o
                                                        │
                                                        v
                               ┌──────────────────────────────────────────────────┐
-                              │      Final VerificationResult + Validation        │
+                              │      Final VerificationResult + Validation       │
                               └──────────────────────────────────────────────────┘
 ```
 
-### 4.1 Verification: Quantitative Empirical Testing
+### 5.1 Verification: Quantitative Empirical Testing
 
 **Verification** asks: *"Is the hypothesized statistical relationship empirically true in the observed data?"*
 
@@ -170,7 +259,7 @@ The verification protocol computes:
 
 ---
 
-### 4.2 Validation: Methodological Audit & Inclusion Gating
+### 5.2 Validation: Methodological Audit & Inclusion Gating
 
 **Validation** asks: *"Even if the correlation is statistically significant, is this proxy credible, open, methodologically sound, and suitable for the Yale EPI?"*
 
@@ -200,81 +289,189 @@ Several official EPI indicators (notably `WRR` — Waste Recovery Rate) are them
 
 ---
 
-## 5. Component Diagram
+---
+
+## 6. Knowledge Graph Post-Processing & Logical Reasoning
+
+The Knowledge Graph (`src/epi_proxy/knowledge_graph/`) is a **post-hoc semantic and symbolic reasoning system** that operates over the aggregated outputs of the multi-agent pipeline. It decouples individual indicator discoveries from global systemic analysis, enabling cross-indicator hypothesis transfer, mechanism anomaly detection, and data opportunity discovery across all 58 EPI indicators.
+
+### 6.1 What It Is & Why It Exists
+
+While Stage 1 and Stage 2 discover and test proxies for one indicator at a time (e.g. `UWD` or `WRR`), environmental systems exhibit deep causal coupling:
+- **Shared Drivers:** Indicators within the same Issue Category (e.g., `WWR` Wastewater Reused and `WWT` Wastewater Treated) share underlying socioeconomic, regulatory, and industrial infrastructure.
+- **Cross-Indicator Signal Transfer:** A data proxy confirmed for indicator $A$ (e.g. pharmaceutical trade data for `UWD`) may serve as a powerful candidate proxy for an untested sibling indicator $B$ (e.g. `HPE` Household Solid Fuels / Household Pathogen Exposure).
+- **Global Inconsistency Detection:** Hypothesized causal mechanisms across independent runs might contradict each other (e.g., claiming a positive vs negative link) or rely on confounding variables like GDP per capita without surviving partial correlation controls.
+
+The Knowledge Graph connects the formal EPI 2024 indicator hierarchy with empirical pipeline results and executes **Answer Set Programming (ASP)** rules via `clingo` to synthesize higher-order systemic insights.
 
 ```
-                                  ┌──────────────────────────────────────────────┐
-                                  │                 ENTRY POINTS                   │
-                                  │                                                │
-                                  │   CLI: uv run epi-proxy -i WRR             │
-                                  │   Web: web/app.py  (Gradio, HF Spaces)         │
-                                  └───────────────────────┬────────────────────────┘
-                                                          │
-                                                          v
-                               ┌────────────────────────────────────────────────────┐
-                               │            src/epi_proxy/orchestrator.py                       │
-                               │   run_pipeline() / run_pipeline_headless()           │
-                               │   • local_inference_context (vLLM / SGLang)          │
-                               │   • load metadata   • seed DB   • route stages       │
-                               │   • aggregate → PipelineResult   • build dashboard    │
-                               └───────┬───────────────────────────────┬──────────────┘
-                                       │                               │
-               ┌───────────────────────┘                               └───────────────────────┐
-               v                                                                                 v
-┌─────────────────────────────────────┐                       ┌──────────────────────────────────────────┐
-│         STAGE 1 — DISCOVERY          │                        │            STAGE 2 — VERIFICATION          │
-│  src/epi_proxy/stage1/discovery.py             │                        │  src/epi_proxy/stage2/verifier.py                    │
-│                                      │                        │                                            │
-│  Tool-calling agent loop:            │                        │  Partition hypotheses by evidence_type:    │
-│    search → preview → fetch → corr   │                        │   ┌─ programmatic_verify                   │
-│    (≤ DISCOVERY_MAX_TOOL_CALLS=80)   │                        │   │    • DB-backed (deterministic) ──┐      │
-│                                      │                        │   │      run_full_verification()      │     │
-│  Tools (src/epi_proxy/stage1/tools.py, 30):    │                        │   │    • else LLM Script Generator    │     │
-│   3 per source × 9 sources + 3 DB    │                        │   │      writes & runs verify.py      │     │
-│        │                             │                        │   ├─ manual_data_needed → exploratory     │
-│        v                             │                        │   └─ literature_attested → corroboration   │
-│  src/epi_proxy/utils/data_fetch.py             │                        │            │                               │
-│   World Bank · WHO GHO · NASA POWER  │                        │            v                               │
-│   Comtrade · Wikipedia · OpenAQ      │                        │  src/epi_proxy/utils/stats.py + db_stats.py          │
-│   GEE · GDELT(BQ) · FAOSTAT(offline) │                        │   bivariate · partial · functional form    │
-│        │                             │                        │   → determine_verdict()                    │
-│        v   parse + enum-repair       │                        │            │                               │
-│  ResearchOutput{ ProxyHypothesis[] } │ ── hypotheses (JSON) ─> │            v                               │
-└──────────────┬───────────────────────┘                       │  src/epi_proxy/stage2/validator.py (LLM Auditor)    │
-               │                                                │   10 inclusion criteria → ValidationAnnotation
-               │                                                │   inclusion gate (advisory/soft/hard)      │
-               │                                                └──────────────────┬─────────────────────────┘
-               │                                                                   │
-               v                                                                   v
-        ┌──────────────────────────────────────────────────────────────────────────────────┐
-        │                          CENTRAL DATA LAYER (src/epi_proxy/utils/db.py)                       │
-        │   DuckDB @ outputs/epi_data.duckdb                                                   │
-        │   variables · observations(country,year,value) · fetch_log                          │
-        │   register_variable · upsert_observations · align_variables · get_observations       │
-        └──────────────────────────────────────────────────────────────────────────────────┘
-               │                                                                   │
-               v                                                                   v
-   ┌─────────────────────────┐                                  ┌──────────────────────────────────────┐
-   │  EPI reference data      │                                   │            OUTPUTS                      │
-   │  docs/EPI2024_Work/      │                                   │  outputs/{TLA}/                         │
-   │   Inputs/  Raw/{TLA}_raw │                                   │   pipeline_result.json · dashboard.html │
-   │   (loaded via data_utils)│                                   │   pipeline.log · llm_traces.jsonl       │
-   │                          │                                   │   stage1/{discovery_output,hypotheses}  │
-   │                          │                                   │   stage2/{HYP-ID}/{verify.py,result.json}
-   └─────────────────────────┘                                   └──────────────────────────────────────┘
-                                                                                   │
-                                                                                   v
-                               ┌────────────────────────────────────────────────────────────────────┐
-                               │   POST-HOC: KNOWLEDGE GRAPH & COMPARISONS                             │
-                               │   src/scripts/compile_knowledge_graph.py  (NetworkX + clingo ASP)         │
-                               │   src/scripts/build_model_comparison.py   (Cross-model matrix dashboard)  │
-                               │   src/scripts/render_llm_traces.py        (Trace HTML visualizer)         │
-                               └────────────────────────────────────────────────────────────────────┘
+       EPI 2024 Taxonomy                               Discovered Evidence Layer
+┌───────────────────────────────┐                  ┌───────────────────────────────┐
+│ PolicyObjective: Ecosystem    │                  │ ProxyNode: WHO Cholera Rate   │
+│       │ contains              │                  │   (confidence, evidence_type) │
+│       v                       │                  └───────────────┬───────────────┘
+│ IssueCategory: Water Quality  │                                  │
+│       │ contains              │                                  │ measured_by
+│       v                       │                                  v
+│ IndicatorNode: UWD            │ <─── proxy_for ───────────────── DataSourceNode: WHO GHO
+│   (domain context, units)     │     (r=0.72, p=0.001,            (org, url, accessibility)
+└───────────────┬───────────────┘      partial_r=0.45,
+                │                      verdict: confirmed)
+                │ sibling_indicator
+                v
+┌───────────────────────────────┐
+│ IndicatorNode: HPE            │ < - - inferred_candidate - - - - [ASP Reasoner]
+│   (untested for cholera data) │       (confidence: 0.80)
+└───────────────────────────────┘
 ```
 
 ---
 
-## 6. Component Reference
+### 6.2 How the Knowledge Graph is Created (`GraphBuilder`)
+
+The graph is constructed by `GraphBuilder` (`src/epi_proxy/knowledge_graph/builder.py`) by layering four heterogeneous data sources into a typed `EpiKnowledgeGraph` (built on NetworkX MultiDiGraph):
+
+1. **EPI Hierarchy Ingestion (`_load_epi_hierarchy`)**:
+   - Parses `docs/EPI2024_Work/Inputs/master_variable_list.csv`.
+   - Creates 3 `PolicyObjective` nodes (`Health`, `Ecosystem`, `Climate`), 11 `IssueCategory` nodes (`AirQuality`, `WaterQuality`, `WasteManagement`, etc.), and 58 `IndicatorNode`s.
+   - Instantiates `contains` edges from Objectives → Categories → Indicators, as well as pairwise bidirectional `same_issue_category` edges between co-located indicators.
+
+2. **Domain Knowledge & Sibling Ingestion (`_load_domain_knowledge`, `_load_sibling_edges`)**:
+   - Ingests indicator metadata and domain context from `src/epi_proxy/domain_knowledge.py`.
+   - Extracts explicit domain sibling mappings (e.g., `WRR` ↔ `WPC` / `SMW`, `WWR` ↔ `WWT` / `WWC` / `WWG`) and adds `sibling_indicator` edges.
+
+3. **Pipeline Results Ingestion (`_load_pipeline_results`)**:
+   - Traverses `outputs/{TLA}/pipeline_result.json` across all available indicator runs.
+   - For each hypothesis, instantiates:
+     - `ProxyNode`: node ID `proxy:{HYP_ID}`, storing proxy variable name, confidence level, evidence type, and description.
+     - `DataSourceNode`: node ID `source:{org_slug}`, storing data source organization, URL, accessibility, and country coverage.
+     - `measured_by` edge: directed from `ProxyNode` → `DataSourceNode`.
+
+4. **Statistical & Audit Edge Attribution**:
+   - Constructs directed `proxy_for` edges from `ProxyNode` → `IndicatorNode`.
+   - Enriches the edge with full statistical metrics from Stage 2 verification: Pearson $r$, $p$-value, Spearman $\rho$, $N$ observations, partial correlation $r_{\text{partial}}$ controlling for log(GDP), best functional form (AIC selected), Stage 2 verdict (`confirmed`, `partially_confirmed`, `inconclusive`, `rejected`), validation inclusion score (0–10), and validation audit flags.
+
+---
+
+### 6.3 Symbolic Reasoning via Answer Set Programming (ASP)
+
+The graph integrates declarative First-Order Logic reasoning via `clingo` (`src/epi_proxy/knowledge_graph/reasoning.py`). The `ReasoningEngine` translates graph structures into ASP relational facts (`indicator/3`, `proxy/4`, `correlation/2`, `partial_r/2`, `source/2`, `sibling/2`, `same_category/2`, `mechanism_mentions_confounder/1`) and executes declarative rules:
+
+```prolog
+#program rules.
+
+% Rule 1: Cross-Indicator Candidate Transfer
+cross_candidate(P, B, "sibling", 800) :-
+    proxy(P, A, _, "confirmed"), sibling(A, B), not has_proxy_for(P, B).
+cross_candidate(P, B, "same_category", 600) :-
+    proxy(P, A, _, "confirmed"), same_category(A, B), A != B,
+    not sibling(A, B), not has_proxy_for(P, B).
+
+% Rule 2a: Direction-Observation Mismatch (Mechanistic Conflict)
+direction_mismatch(P, I, D, R) :-
+    proxy(P, I, D, V), correlation(P, R),
+    V != "rejected", V != "inconclusive",
+    D = "positive", R < -50.
+direction_mismatch(P, I, D, R) :-
+    proxy(P, I, D, V), correlation(P, R),
+    V != "rejected", V != "inconclusive",
+    D = "negative", R > 50.
+
+% Rule 2b: Same-Direction Verdict Conflict
+verdict_conflict(I, P1, P2, D) :-
+    proxy(P1, I, D, "confirmed"), proxy(P2, I, D, "rejected"), P1 != P2.
+
+% Rule 3: Confounder Path Detection
+confounder_warning(P) :-
+    mechanism_mentions_confounder(P),
+    partial_r(P, PR), PR < 300, PR > -300.
+
+% Rule 4: Coverage Gap Detection
+coverage_gap(I) :- indicator(I, _, _), not has_any_proxy(I).
+
+% Rule 5: Shared Data Source Opportunities
+shared_source_candidate(S, B) :-
+    source(P, S), proxy(P, A, _, "confirmed"),
+    sibling(A, B), not source_used_for(S, B).
+```
+
+Each inference generated by `clingo` is parsed into an `Inference` object and reflected back into the graph as an `inferred_candidate` edge with explanatory provenance metadata.
+
+---
+
+### 6.4 What Can Be Analyzed Through the Graph
+
+The programmatic query API (`src/epi_proxy/knowledge_graph/queries.py`) supports deep systemic queries:
+
+| Analytical Query | Function | Systemic Purpose |
+|---|---|---|
+| **Cross-Indicator Candidates** | `get_cross_indicator_candidates()` | Recommends verified proxies from sibling indicators to bootstrap discovery for hard-to-measure indicators without running blind web search. |
+| **Mechanistic Direction Mismatches** | `get_direction_mismatches()` | Identifies hypotheses where theoretical domain mechanisms (e.g. positive association) fail in reality ($r < -0.05$), pinpointing flawed causal assumptions. |
+| **Contradictory Verdicts** | `get_verdict_conflicts()` | Detects instances where two proxies claiming the same mechanism yielded opposite verification results (`confirmed` vs `rejected`), uncovering dataset bias or non-linear effects. |
+| **Confounder Warnings** | `get_confounder_warnings()` | Flags proxies that cite economic wealth or population growth in their causal story but whose statistical link vanishes ($|r_{\text{partial}}| < 0.30$) once log(GDP per capita) is controlled. |
+| **EPI Coverage Gaps** | `get_coverage_gaps()` | Lists orphaned EPI indicators across the 58 indicators that have zero discovered hypotheses, guiding subsequent discovery batch allocations. |
+| **Data Source Overlap & Expansion** | `get_shared_data_sources()` | Discovers high-utility data providers (e.g., UN Comtrade, WHO GHO, NASA POWER) capable of feeding multiple indicators simultaneously. |
+| **Indicator Discovery Matrix** | `get_indicator_coverage_summary()` | Generates a complete coverage DataFrame summarizing total proxies, verdict distributions, and inferred candidate counts across all indicators. |
+
+---
+
+### 6.5 Usage & Multi-Format Exports
+
+The Knowledge Graph post-processor is executed via the CLI or programmatic API:
+
+```bash
+# Compile graph from outputs, run clingo reasoning, and export artifacts
+uv run epi-kg
+```
+
+#### Generated Artifacts (`outputs/knowledge_graph/`):
+1. **`graph.json`**: Complete typed serialization of all nodes, edges, edge weights, and inference attributes.
+2. **`graph.html`**: Standalone interactive Cytoscape.js visualizer featuring:
+   - Force-directed animation with responsive physics.
+   - Interactive search, node categorization, and verdict-based edge coloring (green = confirmed, yellow = partial, red = rejected, dashed purple = inferred).
+   - Sidebar inspector revealing full verification statistics and ASP inference explanations upon node/edge selection.
+3. **`graph.graphml`**: XML-based GraphML export compatible with desktop network analysis tools like Gephi, Cytoscape Desktop, and standard NetworkX workflows.
+4. **`summary.md`**: Markdown report detailing graph summary statistics, indicator coverage matrices, identified coverage gaps, and reasoning inferences.
+5. **Gradio UI Integration**: Rendered natively under the **"Knowledge Graph"** tab in `uv run epi-web`.
+
+---
+
+---
+
+# Part III: Data Contracts & Codebase Map
+
+## 7. Core Data Contracts (`src/epi_proxy/schemas.py`)
+
+```
+ProxyHypothesis            ← Stage 1 output / Stage 2 input
+  ├── context: Context           (geographic_scope, time_period, subpopulations)
+  ├── relationship: Relationship (direction, functional_form, strength_estimate)
+  ├── data_source: DataSource    (name, url, accessibility, methodology_status, update_frequency, coverage)
+  ├── evidence_type              (programmatic_verify | literature_attested | manual_data_needed)  → routes Stage 2
+  ├── confidence                 (speculative | literature_backed | expert_opinion)
+  └── db_variable_id             (set if data was fetched during discovery → enables DB-backed verification)
+
+VerificationResult         ← Stage 2 output (one per hypothesis)
+  ├── verdict                    (confirmed | partially_confirmed | inconclusive | rejected)
+  ├── verification_method        (statistical_test | literature_accepted | pending_data | ...)
+  ├── raw_correlation: CorrelationResult           (pearson_r/p, spearman_rho/p, n_obs, n_countries)
+  ├── partial_correlation: PartialCorrelationResult (partial_r/p, control_variables)
+  ├── functional_form: FunctionalFormResult         (best_form + R²/AIC per form)
+  └── validation: ValidationAnnotation              (issues[], inclusion_score: InclusionCriteriaScore)
+
+PipelineResult             ← final aggregated artifact
+  ├── research_output: ResearchOutput  (hypotheses[] + causal_map_summary)
+  └── verification_results: VerificationResult[]
+```
+
+**The verdict decision tree** (`determine_verdict` in `stats.py`, thresholds in `config.py`):
+`n < 20` → inconclusive · direction mismatch → rejected · `p > 0.10` → rejected · `0.05 < p < 0.10` → inconclusive · `|r| > 0.3 ∧ p < 0.05 ∧ partial significant` → confirmed · bivariate significant but partial not → partially_confirmed.
+
+---
+
+---
+
+## 8. Component Reference
 
 ### Orchestration & Local Inference
 | File | Responsibility |
@@ -317,7 +514,7 @@ Several official EPI indicators (notably `WRR` — Waste Recovery Rate) are them
 |---|---|
 | `src/epi_proxy/utils/db.py` | Central DuckDB (`outputs/epi_data.duckdb`): tables `variables`, `observations`, `fetch_log`. Connection management, `upsert_observations`, `align_variables`. |
 | `src/epi_proxy/utils/data_utils.py` | `load_raw_indicator()` (wide→long format, sentinel→NaN), `load_variable_metadata()`, `get_available_indicators()`. |
-| `src/epi_proxy/utils/country_align.py`, `country_codes.py` | Country name/ISO3 reconciliation across data sources. |
+| `src/epi_proxy/utils/country_align.py`, `src/epi_proxy/utils/country_codes.py` | Country name/ISO3 reconciliation across data sources. |
 | `src/epi_proxy/schemas.py` | All Pydantic v2 data models. |
 
 ### Knowledge Graph (Post-Hoc)
@@ -330,59 +527,32 @@ Several official EPI indicators (notably `WRR` — Waste Recovery Rate) are them
 
 ---
 
-## 7. Core Data Contracts (`src/epi_proxy/schemas.py`)
-
-```
-ProxyHypothesis            ← Stage 1 output / Stage 2 input
-  ├── context: Context           (geographic_scope, time_period, subpopulations)
-  ├── relationship: Relationship (direction, functional_form, strength_estimate)
-  ├── data_source: DataSource    (name, url, accessibility, methodology_status, update_frequency, coverage)
-  ├── evidence_type              (programmatic_verify | literature_attested | manual_data_needed)  → routes Stage 2
-  ├── confidence                 (speculative | literature_backed | expert_opinion)
-  └── db_variable_id             (set if data was fetched during discovery → enables DB-backed verification)
-
-VerificationResult         ← Stage 2 output (one per hypothesis)
-  ├── verdict                    (confirmed | partially_confirmed | inconclusive | rejected)
-  ├── verification_method        (statistical_test | literature_accepted | pending_data | ...)
-  ├── raw_correlation: CorrelationResult           (pearson_r/p, spearman_rho/p, n_obs, n_countries)
-  ├── partial_correlation: PartialCorrelationResult (partial_r/p, control_variables)
-  ├── functional_form: FunctionalFormResult         (best_form + R²/AIC per form)
-  └── validation: ValidationAnnotation              (issues[], inclusion_score: InclusionCriteriaScore)
-
-PipelineResult             ← final aggregated artifact
-  ├── research_output: ResearchOutput  (hypotheses[] + causal_map_summary)
-  └── verification_results: VerificationResult[]
-```
-
-**The verdict decision tree** (`determine_verdict` in `stats.py`, thresholds in `config.py`):
-`n < 20` → inconclusive · direction mismatch → rejected · `p > 0.10` → rejected · `0.05 < p < 0.10` → inconclusive · `|r| > 0.3 ∧ p < 0.05 ∧ partial significant` → confirmed · bivariate significant but partial not → partially_confirmed.
-
 ---
 
-## 8. Developer Onboarding
+# Part IV: Operations & Engineering
 
-### 8.1 Prerequisites & Environment
+## 9. Developer Onboarding
 
-- **Use `uv`** for dependency management and running commands:
-  ```bash
-  uv sync                     # installs dependencies from pyproject.toml / uv.lock
-  ```
-- **Unzip reference EPI data** before running the pipeline:
-  ```bash
-  unzip docs/EPI2024_Work/EPI2024_Work.zip -d docs/
-  ```
-- **API keys** live in `.env` (copy from `.env.example`). `ANTHROPIC_API_KEY` is required for cloud agent runs. Optional keys:
-  | Var | Source | Notes |
-  |---|---|---|
-  | `ANTHROPIC_API_KEY` | Claude models | Required for cloud mode. |
-  | `COMTRADE_API_KEY` | UN Comtrade | Free, 500 req/day. |
-  | `OPENAQ_API_KEY` | OpenAQ v3 | Free, 2000 req/day. |
-  | `GEE_PROJECT` | Google Earth Engine | Needs `earthengine authenticate` first. |
-  | `GOOGLE_APPLICATION_CREDENTIALS` | GDELT (BigQuery) | Service account JSON with BigQuery access. |
-  | `USE_LOCAL_INFERENCE` | Local models | Set `true` to run local open weights via vLLM/SGLang. |
-  | `LOCAL_ENGINE_TYPE` | Local engine | `vllm` or `sglang`. |
+### 9.1 Prerequisites & First-Time Setup
 
-### 8.2 Common CLI Commands
+1. **Install dependencies with `uv`**:
+   ```bash
+   uv sync                     # installs dependencies from pyproject.toml / uv.lock
+   ```
+2. **Unzip reference EPI dataset** (required before first run):
+   ```bash
+   unzip docs/EPI2024_Work/EPI2024_Work.zip -d docs/
+   ```
+
+### 9.2 Environment Configuration (`.env`)
+
+Copy the template `.env.example` to `.env` and populate your API keys and settings:
+```bash
+cp .env.example .env
+```
+Open `.env` and configure your LLM provider keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`), local inference options if running open-weights models (`USE_LOCAL_INFERENCE`), and optional external data source credentials.
+
+### 9.3 Common CLI Commands
 
 ```bash
 # 0. First-time setup: unzip reference dataset
@@ -410,7 +580,7 @@ uv run epi-web
 uv run epi-kg
 ```
 
-### 8.3 Where Outputs Land
+### 9.4 Where Outputs Land
 
 Everything for a run is stored under `outputs/{TLA}/`:
 ```
@@ -430,7 +600,7 @@ outputs/WRR/
 ```
 The central DuckDB persists across runs at `outputs/epi_data.duckdb`.
 
-### 8.4 How to Read the Codebase
+### 9.5 How to Read the Codebase
 
 1. `src/epi_proxy/config.py` — configuration, thresholds, model settings.
 2. `src/epi_proxy/schemas.py` — Pydantic models and data contracts.
@@ -439,10 +609,11 @@ The central DuckDB persists across runs at `outputs/epi_data.duckdb`.
 5. `src/epi_proxy/stage2/verifier.py`, `src/epi_proxy/stage2/validator.py`, & `src/epi_proxy/utils/stats.py` — verification and validation logic.
 6. `src/epi_proxy/utils/db.py` & `src/epi_proxy/utils/db_stats.py` — DuckDB data layer and deterministic verification.
 7. `src/epi_proxy/domain_knowledge.py` — indicator definitions and domain context.
+8. `src/epi_proxy/knowledge_graph/` — post-hoc graph construction, queries, and clingo ASP reasoning.
 
 ---
 
-## 9. Cross-Cutting Notes
+## 10. Cross-Cutting Notes
 
 - **Cost & Latency:** Stage 1 uses a tool-calling reasoning agent (bounded by `DISCOVERY_MAX_TOOL_CALLS`). Stage 2's DB-backed deterministic path is instantaneous and consumes zero LLM tokens. The agent script-generation fallback runs with a 3-attempt self-correction loop.
 - **Model Agnosticism & Local Inference:** Fully supported via `src/epi_proxy/utils/llm.py` and `src/epi_proxy/utils/inference.py` — run cloud models (Anthropic, OpenAI) or local open-weights models (DeepSeek, Qwen, GPT-OSS) via vLLM/SGLang with automated process management.
