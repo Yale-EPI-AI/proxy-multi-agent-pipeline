@@ -7,7 +7,7 @@ build/
 .venv/
 
 # Proprietary EPI data — keep local only
-docs/
+EPI2024_Work/
 
 # OS noise
 .DS_Store
