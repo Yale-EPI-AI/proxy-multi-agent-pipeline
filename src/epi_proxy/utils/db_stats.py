@@ -1,7 +1,7 @@
 """DB-aware statistical analysis wrappers.
 
 Thin layer that retrieves and aligns data from the centralized DuckDB,
-then delegates to the pure-computation functions in src.utils.stats.
+then delegates to the pure-computation functions in epi_proxy.utils.stats.
 """
 
 from __future__ import annotations

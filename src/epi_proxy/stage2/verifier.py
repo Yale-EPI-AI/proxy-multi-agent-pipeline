@@ -150,7 +150,7 @@ async def verify_hypothesis(
                             f"**stdout:**\n```\n{proc.stdout[:2000]}\n```\n\n"
                             "Please fix the script and provide the COMPLETE corrected version. "
                             "Remember to use the shared library functions from epi_proxy.utils.stats "
-                            "and src.utils.data_utils."
+                            "and epi_proxy.utils.data_utils."
                         ),
                     })
 

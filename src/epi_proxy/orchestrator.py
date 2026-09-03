@@ -418,7 +418,8 @@ async def local_inference_context():
 
     # Dynamically update the config so LLMClient uses the discovered port
     import epi_proxy.config
-    src.config.LOCAL_INFERENCE_URL = engine.base_url
+    epi_proxy.config.LOCAL_INFERENCE_URL = engine.base_url
+    os.environ["LOCAL_INFERENCE_URL"] = engine.base_url
     console.print(f"[bold green]Local engine active at {engine.base_url}[/bold green]")
 
     try:

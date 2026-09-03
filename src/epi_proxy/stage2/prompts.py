@@ -249,7 +249,7 @@ Write ALL output files to: `{output_path}/`
 ## Instructions
 Output a COMPLETE Python script in a ```python code block that:
 1. Follows the verify.py pattern in the system prompt
-2. Imports from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
+2. Imports from `epi_proxy.utils.stats` and `epi_proxy.utils.data_utils` — do NOT reimplement these
 3. Writes `{output_path}/result.json` with valid content
 4. If you cannot access the proxy data, writes verdict="inconclusive" with explanation in data_quality_notes
 5. Includes `"verification_method": "statistical_test"` in result.json
@@ -355,7 +355,7 @@ Include a `"verification_method"` key in your result.json:
 ## Instructions
 Output a COMPLETE Python script in a ```python code block that:
 1. Follows the verify.py pattern in the system prompt
-2. Imports from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
+2. Imports from `epi_proxy.utils.stats` and `epi_proxy.utils.data_utils` — do NOT reimplement these
 3. Writes `{output_path}/result.json` with valid content
 4. If you accepted on literature quality alone, writes result.json directly with the
    appropriate verdict and `"verification_method": "literature_accepted"`
@@ -470,7 +470,7 @@ This helps future runs avoid repeating the same dead ends.
 ## Instructions
 Output a COMPLETE Python script in a ```python code block that:
 1. Follows the verify.py pattern in the system prompt
-2. Imports from `src.utils.stats` and `src.utils.data_utils` — do NOT reimplement these
+2. Imports from `epi_proxy.utils.stats` and `epi_proxy.utils.data_utils` — do NOT reimplement these
 3. Writes `{output_path}/result.json` with valid content
 4. Includes `"verification_method"` in result.json per the rules above
 5. Prints progress messages to stdout as it runs

@@ -9,7 +9,7 @@ and renders a single self-contained HTML file with:
   3. Shared-proxy agreement — hypotheses matched by ``db_variable_id`` across models
   4. Per-indicator deep-dive — expandable per-model hypothesis tables
 
-Reuses the styling/helpers from :mod:`src.report` so the look stays consistent
+Reuses the styling/helpers from :mod:`epi_proxy.report` so the look stays consistent
 with the existing per-indicator dashboards.
 """
 
