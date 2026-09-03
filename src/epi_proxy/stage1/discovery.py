@@ -389,17 +389,22 @@ def _parse_discovery_output(tla: str, text: str) -> ResearchOutput:
     """
     # Try to extract JSON from the text
     # Look for ```json ... ``` block first
-    json_match = re.search(r"```json\s*\n(.*?)```", text, re.DOTALL)
+    json_match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
     if json_match:
-        json_str = json_match.group(1)
+        json_str = json_match.group(1).strip()
     else:
-        # Try to find raw JSON object
+        # Try to find raw JSON object with "hypotheses"
         json_match = re.search(r"\{[\s\S]*\"hypotheses\"[\s\S]*\}", text)
         if json_match:
             json_str = json_match.group(0)
         else:
-            logger.warning("Could not find JSON in discovery output")
-            return ResearchOutput(indicator_tla=tla, hypotheses=[])
+            # Also try to find raw JSON array of hypotheses
+            json_match = re.search(r"\[\s*\{[\s\S]*\}\s*\]", text)
+            if json_match:
+                json_str = json_match.group(0)
+            else:
+                logger.warning("Could not find JSON in discovery output")
+                return ResearchOutput(indicator_tla=tla, hypotheses=[])
 
     try:
         data = json.loads(json_str)
@@ -407,8 +412,27 @@ def _parse_discovery_output(tla: str, text: str) -> ResearchOutput:
         logger.warning("Failed to parse discovery JSON: %s", exc)
         return ResearchOutput(indicator_tla=tla, hypotheses=[])
 
+    # If the LLM returned a JSON list directly: [ { "id": ... }, ... ]
+    if isinstance(data, list):
+        data = {"hypotheses": data}
+    elif not isinstance(data, dict):
+        logger.warning("Unexpected JSON type in discovery output: %s", type(data))
+        return ResearchOutput(indicator_tla=tla, hypotheses=[])
+
+    raw_hypotheses = data.get("hypotheses", [])
+    if not isinstance(raw_hypotheses, list):
+        logger.warning("Expected 'hypotheses' to be a list, got %s", type(raw_hypotheses))
+        raw_hypotheses = []
+
     hypotheses = []
-    for h_data in data.get("hypotheses", []):
+    for h_data in raw_hypotheses:
+        if not isinstance(h_data, dict):
+            continue
+        # Skip mock tool calls output as text (e.g. {"type": "function", ...})
+        if "type" in h_data and "function" in h_data:
+            continue
+        if "id" not in h_data and "proxy_variable" not in h_data:
+            continue
         hyp_id = h_data.get("id", "?")
         _repair_hypothesis_enums(h_data, hyp_id)
         try:
@@ -423,5 +447,5 @@ def _parse_discovery_output(tla: str, text: str) -> ResearchOutput:
     return ResearchOutput(
         indicator_tla=tla,
         hypotheses=hypotheses,
-        causal_map_summary=data.get("causal_map_summary", ""),
+        causal_map_summary=data.get("causal_map_summary", "") if isinstance(data, dict) else "",
     )
