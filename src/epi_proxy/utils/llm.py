@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -11,6 +12,16 @@ from typing import Any, Dict, List, Optional
 import anthropic
 from google import genai
 from openai import AsyncOpenAI, OpenAI
+
+
+def sanitize_tool_name(name: str) -> str:
+    """Ensure tool name complies with OpenAI/vLLM function naming regex ^[a-zA-Z0-9_-]{1,64}$."""
+    if not name:
+        return "unknown_tool"
+    # Replace spaces and any invalid characters with underscores
+    sanitized = re.sub(r"[^a-zA-Z0-9_-]", "_", name.strip())
+    sanitized = re.sub(r"_+", "_", sanitized)
+    return sanitized[:64] or "tool"
 
 from epi_proxy.config import (
     ANTHROPIC_API_KEY,
@@ -401,7 +412,7 @@ class LLMClient:
                             args = {}
                         tool_uses.append(ToolUseBlock(
                             id=tc.id,
-                            name=tc.function.name,
+                            name=sanitize_tool_name(tc.function.name),
                             input=args,
                         ))
 
@@ -489,7 +500,7 @@ class LLMClient:
                         "id": tu.id,
                         "type": "function",
                         "function": {
-                            "name": tu.name,
+                            "name": sanitize_tool_name(tu.name),
                             "arguments": json.dumps(tu.input),
                         },
                     }

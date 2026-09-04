@@ -520,7 +520,12 @@ async def run_pipeline_multi(args: argparse.Namespace) -> None:
         for i, tla in enumerate(args.indicators, 1):
             tla = tla.upper()
             console.print(f"\n[bold cyan]=== [{i}/{len(args.indicators)}] {tla} ===[/bold cyan]")
-            await _run_pipeline_inner(tla, args)
+            try:
+                await _run_pipeline_inner(tla, args)
+            except Exception as exc:
+                logger.exception("Pipeline failed for indicator %s: %s", tla, exc)
+                console.print(f"[bold red]Pipeline failed for indicator {tla}: {exc}[/bold red]")
+                continue
             console.print(f"[bold cyan]=== Completed {tla} [{i}/{len(args.indicators)}] ===[/bold cyan]")
 
 

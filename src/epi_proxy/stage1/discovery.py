@@ -115,13 +115,24 @@ async def run_discovery(
 
     # Agent loop
     while True:
-        response = await client.chat_with_tools(
-            model=CLAUDE_DISCOVERY_MODEL,
-            max_tokens=8192,
-            system=DISCOVERY_SYSTEM_PROMPT,
-            tools=DISCOVERY_TOOLS,
-            messages=messages,
-        )
+        try:
+            response = await client.chat_with_tools(
+                model=CLAUDE_DISCOVERY_MODEL,
+                max_tokens=8192,
+                system=DISCOVERY_SYSTEM_PROMPT,
+                tools=DISCOVERY_TOOLS,
+                messages=messages,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Error during discovery loop for %s after %d tool calls: %s. Finalizing.",
+                tla, tool_call_count, exc,
+            )
+            for m in reversed(messages):
+                if m.get("role") == "assistant" and "hypotheses" in str(m.get("content")):
+                    final_text = m.get("content") or ""
+                    break
+            break
 
         logger.info(
             "Agent response: stop_reason=%s, tool_uses=%d, text_len=%d",
@@ -170,14 +181,17 @@ async def run_discovery(
                 ),
             })
             # One more turn to get the final output
-            response = await client.chat_with_tools(
-                model=CLAUDE_DISCOVERY_MODEL,
-                max_tokens=8192,
-                system=DISCOVERY_SYSTEM_PROMPT,
-                tools=DISCOVERY_TOOLS,
-                messages=messages,
-            )
-            final_text = response.text or ""
+            try:
+                response = await client.chat_with_tools(
+                    model=CLAUDE_DISCOVERY_MODEL,
+                    max_tokens=8192,
+                    system=DISCOVERY_SYSTEM_PROMPT,
+                    tools=DISCOVERY_TOOLS,
+                    messages=messages,
+                )
+                final_text = response.text or ""
+            except Exception as exc:
+                logger.warning("Error during finalization turn for %s: %s", tla, exc)
             break
 
     # Parse final output

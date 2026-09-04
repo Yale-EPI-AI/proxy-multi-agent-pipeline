@@ -4,10 +4,10 @@ Provides 15 tools across 4 data sources + 3 DB tools that let the
 Claude discovery agent search, preview, fetch, and correlate data.
 """
 
-from __future__ import annotations
-
+import difflib
 import json
 import logging
+import re
 import traceback
 
 logger = logging.getLogger(__name__)
@@ -387,16 +387,40 @@ DISCOVERY_TOOLS: list[dict] = [
 # ---------------------------------------------------------------------------
 
 
+def _resolve_tool_name(tool_name: str) -> str:
+    """Normalize and fuzzy-match tool name if model emitted slight variations."""
+    known_tools = [t["name"] for t in DISCOVERY_TOOLS]
+    if tool_name in known_tools:
+        return tool_name
+
+    # Check case-insensitive match with stripped spaces/underscores
+    norm = re.sub(r"[^a-zA-Z0-9]", "", tool_name.lower())
+    for known in known_tools:
+        if norm == re.sub(r"[^a-zA-Z0-9]", "", known.lower()):
+            logger.info("Normalized tool name %r -> %r", tool_name, known)
+            return known
+
+    # Try difflib fuzzy matching
+    clean_name = re.sub(r"[^a-zA-Z0-9_-]", "_", tool_name.strip())
+    matches = difflib.get_close_matches(clean_name, known_tools, n=1, cutoff=0.7)
+    if matches:
+        logger.info("Fuzzy-matched tool name %r -> %r", tool_name, matches[0])
+        return matches[0]
+
+    return tool_name
+
+
 def execute_tool(tool_name: str, tool_input: dict, conn) -> str:
     """Dispatch a tool call to the appropriate function.
 
     Returns a JSON string with the result or error.
     """
+    resolved_name = _resolve_tool_name(tool_name)
     try:
-        result = _dispatch(tool_name, tool_input, conn)
+        result = _dispatch(resolved_name, tool_input, conn)
         return json.dumps(result, default=str)
     except Exception as exc:
-        logger.warning("Tool %s failed: %s", tool_name, exc)
+        logger.warning("Tool %s (resolved: %s) failed: %s", tool_name, resolved_name, exc)
         return json.dumps({"error": str(exc), "traceback": traceback.format_exc()[-500:]})
 
 
