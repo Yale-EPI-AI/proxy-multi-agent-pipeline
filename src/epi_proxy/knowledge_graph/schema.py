@@ -39,11 +39,16 @@ class IndicatorNode(NodeData):
 
 class ProxyNode(NodeData):
     node_type: NodeType = NodeType.PROXY_VARIABLE
-    hypothesis_id: str
+    hypothesis_id: str = ""
     proxy_variable: str
     proxy_description: str = ""
     confidence: str = ""
     evidence_type: str = ""
+    canonical_id: str = ""
+    models: list[str] = Field(default_factory=list)
+    model_count: int = 1
+    consensus_status: str = ""
+    verdict_breakdown: dict[str, int] = Field(default_factory=dict)
 
 
 class DataSourceNode(NodeData):
@@ -89,6 +94,12 @@ class ProxyForEdge(EdgeData):
     best_functional_form: str = ""
     inclusion_score: Optional[int] = None
     validation_issues: list[str] = Field(default_factory=list)
+    models: list[str] = Field(default_factory=list)
+    model_count: int = 1
+    model_evaluations: dict[str, dict] = Field(default_factory=dict)
+    consensus_verdict: str = ""
+    agreement_score: float = 1.0
+    has_directional_conflict: bool = False
 
 
 class InferredCandidateEdge(EdgeData):

@@ -1,14 +1,22 @@
 """Compile the knowledge graph from all pipeline outputs.
 
-Scans outputs/ for directories matching EPI indicator TLAs,
-loads their pipeline_result.json files, builds the graph,
-runs clingo reasoning, and exports results.
+Scans an outputs directory (or multi-model benchmark root) for indicator results,
+builds the knowledge graph with canonical entity resolution, runs clingo ASP reasoning,
+and exports interactive visualization, Markdown summary, GraphML, and JSON.
 
-Usage: uv run python src/scripts/compile_knowledge_graph.py
+Usage:
+    # Single run:
+    uv run epi-kg
+    uv run epi-kg --inputs-dir new-outputs/new-outputs-deepseek-v4-flash
+
+    # Multi-model cross-LLM graph:
+    uv run epi-kg --multi-model --root new-outputs
+    uv run epi-kg --inputs-dir new-outputs
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -19,10 +27,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from epi_proxy.config import OUTPUTS_DIR
 from epi_proxy.knowledge_graph import (
     GraphBuilder,
+    MultiModelGraphBuilder,
     run_reasoning,
     get_coverage_gaps,
     get_graph_stats,
     get_indicator_coverage_summary,
+    get_consensus_proxies,
+    get_inter_model_conflicts,
     to_json,
     to_graphml,
     to_summary_report,
@@ -34,12 +45,65 @@ def main() -> None:
     from rich.console import Console
     from rich.table import Table
 
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "-i",
+        "--inputs-dir",
+        "--input-dir",
+        type=Path,
+        default=OUTPUTS_DIR,
+        help=f"Directory containing indicator subdirectories or model runs (default: {OUTPUTS_DIR})",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory to save exported graph files (default: <target-dir>/knowledge_graph)",
+    )
+    parser.add_argument(
+        "-m",
+        "--multi-model",
+        action="store_true",
+        help="Build a consolidated cross-LLM graph across multiple model output directories",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Parent directory containing model subdirectories for multi-model mode (e.g. new-outputs)",
+    )
+    args = parser.parse_args()
+
     console = Console()
 
+    # Determine multi-model mode
+    is_multi_model = args.multi_model or (args.root is not None)
+    target_dir: Path = (args.root or args.inputs_dir).resolve()
+
+    if not target_dir.is_dir():
+        parser.error(f"Target directory does not exist: {target_dir}")
+
+    # Auto-detect multi-model directory if not explicitly passed
+    if not is_multi_model:
+        for sub in target_dir.iterdir():
+            if sub.is_dir() and any(sub.glob("*/pipeline_result.json")):
+                is_multi_model = True
+                break
+
+    out_dir: Path = (args.output_dir or target_dir / "knowledge_graph").resolve()
+
     # 1. Build the graph
-    console.print("\n[bold]Building EPI knowledge graph...[/bold]")
-    builder = GraphBuilder()
-    kg = builder.build()
+    if is_multi_model:
+        console.print(f"\n[bold]Building Cross-LLM knowledge graph from [cyan]{target_dir}[/cyan]...[/bold]")
+        builder = MultiModelGraphBuilder(root_dir=target_dir)
+        kg = builder.build()
+        if builder.model_names:
+            console.print(f"  Aggregated [green]{len(builder.model_names)}[/green] models: {', '.join(builder.model_names)}")
+    else:
+        console.print(f"\n[bold]Building EPI knowledge graph from [cyan]{target_dir}[/cyan]...[/bold]")
+        builder = GraphBuilder(outputs_dir=target_dir)
+        kg = builder.build()
 
     stats = get_graph_stats(kg)
     console.print(f"  Nodes: {stats['total_nodes']}, Edges: {stats['total_edges']}")
@@ -55,6 +119,15 @@ def main() -> None:
         inf_types[inf.inference_type] = inf_types.get(inf.inference_type, 0) + 1
     for itype, count in sorted(inf_types.items()):
         console.print(f"    {itype}: {count}")
+
+    # Multi-model highlights
+    if is_multi_model:
+        consensus_list = get_consensus_proxies(kg)
+        if consensus_list:
+            console.print(f"\n[bold green]Multi-Model Consensus:[/bold green] {len(consensus_list)} proxies independently confirmed by >= 2 models")
+        conflict_list = get_inter_model_conflicts(kg, inferences)
+        if conflict_list:
+            console.print(f"[bold yellow]Inter-Model Contradictions:[/bold yellow] {len(conflict_list)} proxies with conflicting verdicts/directions")
 
     # 3. Summary table (recompute after reasoning adds inferred edges)
     stats = get_graph_stats(kg)
@@ -101,7 +174,6 @@ def main() -> None:
     console.print(f"\n[bold]Coverage gaps:[/bold] {len(gaps)} indicators with no proxies")
 
     # 5. Export
-    out_dir = OUTPUTS_DIR / "knowledge_graph"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # JSON

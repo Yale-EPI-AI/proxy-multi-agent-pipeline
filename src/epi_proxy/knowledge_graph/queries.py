@@ -209,9 +209,103 @@ def get_graph_stats(graph: EpiKnowledgeGraph) -> dict:
     # Count unique indicators with at least one proxy
     indicators_with_proxies = set()
     for _, v, _ in graph.get_edges_by_type(EdgeType.PROXY_FOR):
-        indicators_with_proxies.add(v)
+        node = graph.get_node(v)
+        if node and node.node_type == NodeType.INDICATOR:
+            indicators_with_proxies.add(v)
 
+    n_indicators = summary.get(f"node:{NodeType.INDICATOR.value}", 0)
     summary["indicators_with_proxies"] = len(indicators_with_proxies)
-    summary["indicators_without_proxies"] = summary.get(f"node:{NodeType.INDICATOR.value}", 0) - len(indicators_with_proxies)
+    summary["indicators_without_proxies"] = max(0, n_indicators - len(indicators_with_proxies))
 
     return summary
+
+
+def get_consensus_proxies(graph: EpiKnowledgeGraph) -> list[dict]:
+    """Get all proxies that reached multi-model consensus (>= 2 confirming models)."""
+    results = []
+    for u, v, edge in graph.get_edges_by_type(EdgeType.PROXY_FOR):
+        m_count = getattr(edge, "model_count", 1)
+        models = getattr(edge, "models", [])
+        c_verdict = getattr(edge, "consensus_verdict", getattr(edge, "verdict", ""))
+        evals = getattr(edge, "model_evaluations", {})
+
+        confirmed_models = [
+            m for m, ev in evals.items() if ev.get("verdict") == "confirmed"
+        ] if evals else (models if c_verdict == "confirmed" else [])
+
+        if len(confirmed_models) >= 2 or (m_count >= 2 and c_verdict == "confirmed"):
+            proxy_node = graph.get_node(u)
+            results.append({
+                "proxy_id": u,
+                "target_indicator": v.split(":", 1)[1] if ":" in v else v,
+                "proxy_variable": getattr(proxy_node, "proxy_variable", "") if proxy_node else "",
+                "confirmed_models": confirmed_models,
+                "model_count": m_count,
+                "models": models,
+                "consensus_verdict": c_verdict,
+                "agreement_score": getattr(edge, "agreement_score", 1.0),
+                "pearson_r": getattr(edge, "pearson_r", None),
+                "partial_r": getattr(edge, "partial_r", None),
+            })
+    return results
+
+
+def get_inter_model_conflicts(
+    graph: EpiKnowledgeGraph,
+    inferences: Optional[list[Inference]] = None,
+) -> list[dict]:
+    """Get proxies where models had contradicting verdicts or directions."""
+    results = []
+    if inferences:
+        for inf in inferences:
+            if inf.inference_type in ("inter_model_conflict", "directional_conflict"):
+                results.append({"type": inf.inference_type, **inf.details})
+
+    # Also check edges marked with directional conflicts directly
+    if not results:
+        for u, v, edge in graph.get_edges_by_type(EdgeType.PROXY_FOR):
+            if getattr(edge, "has_directional_conflict", False):
+                proxy_node = graph.get_node(u)
+                results.append({
+                    "type": "directional_conflict",
+                    "proxy_id": u,
+                    "target_indicator": v.split(":", 1)[1] if ":" in v else v,
+                    "proxy_variable": getattr(proxy_node, "proxy_variable", "") if proxy_node else "",
+                    "models": getattr(edge, "models", []),
+                    "evaluations": getattr(edge, "model_evaluations", {}),
+                })
+    return results
+
+
+def get_model_unique_discoveries(
+    graph: EpiKnowledgeGraph,
+    model_name: Optional[str] = None,
+    inferences: Optional[list[Inference]] = None,
+) -> list[dict]:
+    """Get confirmed proxies discovered exclusively by a single model."""
+    results = []
+    if inferences:
+        for inf in inferences:
+            if inf.inference_type == "unique_model_discovery":
+                m = inf.details.get("model", "")
+                if model_name is None or m == model_name:
+                    results.append(inf.details)
+        if results:
+            return results
+
+    # Fallback directly from graph attributes
+    for u, v, edge in graph.get_edges_by_type(EdgeType.PROXY_FOR):
+        models = getattr(edge, "models", [])
+        verdict = getattr(edge, "verdict", "")
+        if len(models) == 1 and verdict == "confirmed":
+            m = models[0]
+            if model_name is None or m == model_name:
+                proxy_node = graph.get_node(u)
+                results.append({
+                    "proxy_id": u,
+                    "target_tla": v.split(":", 1)[1] if ":" in v else v,
+                    "proxy_variable": getattr(proxy_node, "proxy_variable", "") if proxy_node else "",
+                    "model": m,
+                    "pearson_r": getattr(edge, "pearson_r", None),
+                })
+    return results

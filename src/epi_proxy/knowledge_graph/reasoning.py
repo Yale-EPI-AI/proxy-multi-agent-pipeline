@@ -91,6 +91,47 @@ shared_source_candidate(S, B) :-
     sibling(A, B), not source_used_for(S, B).
 source_used_for(S, I) :- source(P, S), proxy(P, I, _, _).
 
+% ══════════════════════════════════════════════════════════════════
+% Rule 6: Multi-Model Consensus
+% High confidence when >= 2 distinct models confirm a proxy for indicator I
+% ══════════════════════════════════════════════════════════════════
+multi_model_consensus(P, I) :-
+    proxy_model(P, I, M1, _, "confirmed"),
+    proxy_model(P, I, M2, _, "confirmed"),
+    M1 < M2.
+
+% ══════════════════════════════════════════════════════════════════
+% Rule 7: Inter-Model Verdict Contradiction
+% One model confirms while another rejects the exact same proxy for indicator I
+% ══════════════════════════════════════════════════════════════════
+inter_model_conflict(P, I, M1, M2) :-
+    proxy_model(P, I, M1, _, "confirmed"),
+    proxy_model(P, I, M2, _, "rejected"),
+    M1 != M2.
+
+% ══════════════════════════════════════════════════════════════════
+% Rule 8: Inter-Model Directional Conflict
+% Two models hypothesize opposing directions for the same proxy/indicator
+% ══════════════════════════════════════════════════════════════════
+inter_model_directional_conflict(P, I, M1, M2, D1, D2) :-
+    proxy_model(P, I, M1, D1, _),
+    proxy_model(P, I, M2, D2, _),
+    D1 != D2, D1 = "positive", D2 = "negative",
+    M1 != M2.
+
+% ══════════════════════════════════════════════════════════════════
+% Rule 9: Unique Model Discovery (Novelty)
+% A proxy confirmed by model M that no other model evaluated
+% ══════════════════════════════════════════════════════════════════
+shared_proxy_eval(P, I) :-
+    proxy_model(P, I, M1, _, _),
+    proxy_model(P, I, M2, _, _),
+    M1 != M2.
+
+unique_model_discovery(P, I, M) :-
+    proxy_model(P, I, M, _, "confirmed"),
+    not shared_proxy_eval(P, I).
+
 % Show directives
 #show cross_candidate/4.
 #show direction_mismatch/4.
@@ -98,6 +139,10 @@ source_used_for(S, I) :- source(P, S), proxy(P, I, _, _).
 #show confounder_warning/1.
 #show coverage_gap/1.
 #show shared_source_candidate/2.
+#show multi_model_consensus/2.
+#show inter_model_conflict/4.
+#show inter_model_directional_conflict/6.
+#show unique_model_discovery/3.
 """
 
 
@@ -146,26 +191,41 @@ class ReasoningEngine:
 
         # Proxy facts from proxy_for edges
         for u, v, edge in self.graph.get_edges_by_type(EdgeType.PROXY_FOR):
-            proxy_id = u.split(":", 1)[1]  # e.g. "UWD-H01"
+            proxy_id = u.split(":", 1)[1]  # e.g. "UWD-H01" or canonical key
             target_tla = v.split(":", 1)[1]
-            direction = getattr(edge, "direction", "unknown")
-            verdict = getattr(edge, "verdict", "inconclusive")
-            lines.append(f'proxy("{proxy_id}", "{target_tla}", "{direction}", "{verdict}").')
+            direction = getattr(edge, "direction", "unknown") or "unknown"
+            verdict = getattr(edge, "verdict", "inconclusive") or "inconclusive"
+            safe_proxy_id = proxy_id.replace('"', '\\"')
+            lines.append(f'proxy("{safe_proxy_id}", "{target_tla}", "{direction}", "{verdict}").')
+
+            # Multi-model evaluation facts
+            evals = getattr(edge, "model_evaluations", {})
+            if evals:
+                for m_name, ev in evals.items():
+                    m_dir = ev.get("direction") or direction
+                    m_verd = ev.get("verdict") or verdict
+                    safe_m = m_name.replace('"', '\\"')
+                    lines.append(f'proxy_model("{safe_proxy_id}", "{target_tla}", "{safe_m}", "{m_dir}", "{m_verd}").')
+            else:
+                m_list = getattr(edge, "models", [])
+                m_name = m_list[0] if m_list else "default"
+                safe_m = m_name.replace('"', '\\"')
+                lines.append(f'proxy_model("{safe_proxy_id}", "{target_tla}", "{safe_m}", "{direction}", "{verdict}").')
 
             # Correlation (scaled to int * 1000)
             pearson_r = getattr(edge, "pearson_r", None)
             if pearson_r is not None:
-                lines.append(f'correlation("{proxy_id}", {int(pearson_r * 1000)}).')
+                lines.append(f'correlation("{safe_proxy_id}", {int(pearson_r * 1000)}).')
 
             # Partial correlation
             partial_r = getattr(edge, "partial_r", None)
             if partial_r is not None:
-                lines.append(f'partial_r("{proxy_id}", {int(partial_r * 1000)}).')
+                lines.append(f'partial_r("{safe_proxy_id}", {int(partial_r * 1000)}).')
 
             # N observations
             n_obs = getattr(edge, "n_observations", None)
             if n_obs is not None:
-                lines.append(f'n_obs("{proxy_id}", {n_obs}).')
+                lines.append(f'n_obs("{safe_proxy_id}", {n_obs}).')
 
             # Proxy name for transitive matching
             proxy_node = self.graph.get_node(u)
@@ -173,20 +233,23 @@ class ReasoningEngine:
                 pname = getattr(proxy_node, "proxy_variable", "")
                 if pname:
                     safe_name = pname.replace('"', '\\"')[:80]
-                    lines.append(f'proxy_name("{proxy_id}", "{safe_name}").')
+                    lines.append(f'proxy_name("{safe_proxy_id}", "{safe_name}").')
 
         # Source facts
         for u, v, _ in self.graph.get_edges_by_type(EdgeType.MEASURED_BY):
             proxy_id = u.split(":", 1)[1]
             source_id = v.split(":", 1)[1]
-            lines.append(f'source("{proxy_id}", "{source_id}").')
+            safe_proxy_id = proxy_id.replace('"', '\\"')
+            safe_source_id = source_id.replace('"', '\\"')
+            lines.append(f'source("{safe_proxy_id}", "{safe_source_id}").')
 
         # Mechanism confounder scanning (done in Python)
         for u, v, edge in self.graph.get_edges_by_type(EdgeType.PROXY_FOR):
             proxy_id = u.split(":", 1)[1]
+            safe_proxy_id = proxy_id.replace('"', '\\"')
             mechanism = getattr(edge, "mechanism", "").lower()
             if any(kw in mechanism for kw in _CONFOUNDER_KEYWORDS):
-                lines.append(f'mechanism_mentions_confounder("{proxy_id}").')
+                lines.append(f'mechanism_mentions_confounder("{safe_proxy_id}").')
 
         return "\n".join(lines)
 
@@ -284,6 +347,69 @@ class ReasoningEngine:
                 source=f"source:{source_id}",
                 target=f"indicator:{target_tla}",
                 details={"source": source_id, "target_tla": target_tla},
+            )
+
+        elif name == "multi_model_consensus":
+            proxy_id = args[0].string
+            target_tla = args[1].string
+            return Inference(
+                inference_type="multi_model_consensus",
+                source=f"proxy:{proxy_id}",
+                target=f"indicator:{target_tla}",
+                details={"proxy_id": proxy_id, "target_tla": target_tla},
+            )
+
+        elif name == "inter_model_conflict":
+            proxy_id = args[0].string
+            target_tla = args[1].string
+            m1 = args[2].string
+            m2 = args[3].string
+            return Inference(
+                inference_type="inter_model_conflict",
+                source=f"proxy:{proxy_id}",
+                target=f"indicator:{target_tla}",
+                details={
+                    "proxy_id": proxy_id,
+                    "target_tla": target_tla,
+                    "confirming_model": m1,
+                    "rejecting_model": m2,
+                },
+            )
+
+        elif name == "inter_model_directional_conflict":
+            proxy_id = args[0].string
+            target_tla = args[1].string
+            m1 = args[2].string
+            m2 = args[3].string
+            d1 = args[4].string
+            d2 = args[5].string
+            return Inference(
+                inference_type="directional_conflict",
+                source=f"proxy:{proxy_id}",
+                target=f"indicator:{target_tla}",
+                details={
+                    "proxy_id": proxy_id,
+                    "target_tla": target_tla,
+                    "model1": m1,
+                    "direction1": d1,
+                    "model2": m2,
+                    "direction2": d2,
+                },
+            )
+
+        elif name == "unique_model_discovery":
+            proxy_id = args[0].string
+            target_tla = args[1].string
+            m = args[2].string
+            return Inference(
+                inference_type="unique_model_discovery",
+                source=f"proxy:{proxy_id}",
+                target=f"indicator:{target_tla}",
+                details={
+                    "proxy_id": proxy_id,
+                    "target_tla": target_tla,
+                    "model": m,
+                },
             )
 
         return None

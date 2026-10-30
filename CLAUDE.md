@@ -175,8 +175,12 @@ uv run epi-proxy -i WRR --stage 2 --hypotheses-file outputs/WRR/stage1/hypothese
 # Launch Gradio Web UI
 uv run epi-web
 
-# Compile knowledge graph
+# Compile knowledge graph (default outputs/ or specific model run)
 uv run epi-kg
+uv run epi-kg -i new-outputs/new-outputs-deepseek-v4-flash
+
+# Compile cross-LLM consolidated knowledge graph
+uv run epi-kg --multi-model --root new-outputs -o outputs/cross_model_kg
 
 # Render LLM traces to HTML
 uv run python src/scripts/render_llm_traces.py outputs/WRR/llm_traces.jsonl

@@ -52,11 +52,18 @@ def _build_viz_elements(graph: EpiKnowledgeGraph) -> list[dict]:
             data["proxy_description"] = attrs.get("proxy_description", "")
             data["confidence"] = attrs.get("confidence", "")
             data["evidence_type"] = attrs.get("evidence_type", "")
+            data["canonical_id"] = attrs.get("canonical_id", "")
+            data["models"] = attrs.get("models", [])
+            data["model_count"] = attrs.get("model_count", 1)
+            data["consensus_status"] = attrs.get("consensus_status", "")
             # Find the verdict from proxy_for edge
             for _, target, eattrs in graph.nx_graph.out_edges(nid, data=True):
                 if eattrs.get("edge_type") == EdgeType.PROXY_FOR.value:
                     data["verdict"] = eattrs.get("verdict", "")
+                    data["consensus_verdict"] = eattrs.get("consensus_verdict", eattrs.get("verdict", ""))
                     data["target_tla"] = target.split(":", 1)[1] if ":" in target else target
+                    if not data.get("models") and "models" in eattrs:
+                        data["models"] = eattrs.get("models", [])
                     break
 
         elif node_type == NodeType.DATA_SOURCE.value:
@@ -88,6 +95,12 @@ def _build_viz_elements(graph: EpiKnowledgeGraph) -> list[dict]:
             data["functional_form"] = attrs.get("functional_form", "")
             data["strength_estimate"] = attrs.get("strength_estimate", "")
             data["mechanism"] = (attrs.get("mechanism", "") or "")[:300]
+            data["models"] = attrs.get("models", [])
+            data["model_count"] = attrs.get("model_count", 1)
+            data["consensus_verdict"] = attrs.get("consensus_verdict", "")
+            data["agreement_score"] = attrs.get("agreement_score", 1.0)
+            data["has_directional_conflict"] = attrs.get("has_directional_conflict", False)
+            data["model_evaluations"] = attrs.get("model_evaluations", {})
             pr = attrs.get("pearson_r")
             if pr is not None:
                 data["pearson_r"] = round(pr, 3)
@@ -131,9 +144,18 @@ def generate_html(
         if attrs.get("node_type") == NodeType.INDICATOR.value
     ])
 
+    # Collect all unique models in elements
+    models_set = set()
+    for el in elements:
+        for m in el["data"].get("models", []):
+            if m:
+                models_set.add(m)
+    all_models = sorted(models_set)
+
     html = _HTML_TEMPLATE.replace("__ELEMENTS__", json.dumps(elements, default=str))
     html = html.replace("__TLA_LIST__", json.dumps(tlas))
     html = html.replace("__INFERENCE_SUMMARY__", json.dumps(inference_summary))
+    html = html.replace("__MODELS_LIST__", json.dumps(all_models))
 
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -303,6 +325,15 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section-label">Search Indicator</div>
     <input type="text" id="search" class="search-box" placeholder="Type TLA (e.g. UWD, WRR)..." list="tla-list">
     <datalist id="tla-list"></datalist>
+    <div style="display:flex;gap:6px;margin-top:6px;">
+      <button id="btn-fit" class="search-box" style="flex:1;padding:6px;cursor:pointer;background:var(--bg-primary);text-align:center;font-size:11px;font-family:var(--font-mono);">Fit View</button>
+      <button id="btn-relayout" class="search-box" style="flex:1;padding:6px;cursor:pointer;background:var(--bg-primary);text-align:center;font-size:11px;font-family:var(--font-mono);">Relayout</button>
+    </div>
+  </div>
+
+  <div id="model-filter-section" style="display:none;">
+    <div class="section-label">Model Filter</div>
+    <select id="model-select" class="search-box" style="cursor:pointer;"></select>
   </div>
 
   <div>
@@ -352,6 +383,8 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
 const allElements = __ELEMENTS__;
 const tlaList = __TLA_LIST__;
 const inferenceSummary = __INFERENCE_SUMMARY__;
+const modelsList = __MODELS_LIST__;
+let selectedModel = '';
 
 // ── Semantic labels ────────────────────────────────────────────
 const nodeLabels = {
@@ -424,6 +457,21 @@ let searchTLA = '';
 
 // ── Setup controls ─────────────────────────────────────────────
 function setupControls() {
+  // Multi-model filter
+  if (modelsList && modelsList.length > 1) {
+    const sec = document.getElementById('model-filter-section');
+    const sel = document.getElementById('model-select');
+    if (sec && sel) {
+      sec.style.display = 'block';
+      sel.innerHTML = `<option value="">All Models (${modelsList.length})</option>` +
+        modelsList.map(m => `<option value="${m}">${m}</option>`).join('');
+      sel.addEventListener('change', e => {
+        selectedModel = e.target.value;
+        applyFilters();
+      });
+    }
+  }
+
   // Layer (node type) toggles
   const lt = document.getElementById('layer-toggles');
   for (const [type, label] of Object.entries(nodeLabels)) {
@@ -502,7 +550,7 @@ function setupControls() {
 // ── Cytoscape init ─────────────────────────────────────────────
 const cy = cytoscape({
   container: document.getElementById('cy'),
-  elements: [],
+  elements: allElements,
   style: [
     // Base node
     { selector: 'node', style: {
@@ -512,7 +560,11 @@ const cy = cytoscape({
       'text-max-width': 85, 'text-wrap': 'ellipsis',
       'background-color': '#999', 'width': 18, 'height': 18, 'border-width': 0,
       'transition-property': 'opacity, background-color, border-width, border-color, width, height',
-      'transition-duration': '0.25s',
+      'transition-duration': '0.2s',
+    }},
+    // Hidden class for instantaneous non-destructive filtering
+    { selector: '.hidden', style: {
+      'display': 'none'
     }},
     // Policy objectives — center
     { selector: 'node[node_type="policy_objective"]', style: {
@@ -553,7 +605,7 @@ const cy = cytoscape({
       'target-arrow-shape': 'triangle', 'target-arrow-color': '#d4d2cb',
       'arrow-scale': 0.5, 'opacity': 0.4,
       'transition-property': 'opacity, line-color, width',
-      'transition-duration': '0.25s',
+      'transition-duration': '0.2s',
     }},
     // Edge type styles
     { selector: 'edge[edge_type="contains"]', style: {
@@ -583,36 +635,88 @@ const cy = cytoscape({
     { selector: 'edge.dimmed', style: { 'opacity': 0.03 }},
     { selector: '.highlighted-edge', style: { 'opacity': 0.9, 'width': 2.5, 'z-index': 999 }},
   ],
-  layout: { name: 'preset' },
   wheelSensitivity: 0.3,
 });
 
-// ── Filtering ──────────────────────────────────────────────────
+// ── Layout (concentric hierarchical — instant & deterministic) ──
+function runLayout() {
+  cy.layout({
+    name: 'concentric',
+    concentric: function(node) {
+      const ring = node.data('ring');
+      return (ring !== undefined) ? (5 - ring) : 1;
+    },
+    levelWidth: function() { return 1; },
+    equidistant: true,
+    minNodeSpacing: 18,
+    spacingFactor: 1.0,
+    avoidOverlap: true,
+    padding: 40,
+    animate: false,
+    fit: true,
+  }).run();
+}
+
+// ── Instant CSS-class based filtering ──────────────────────────
 function getFilteredElements() {
-  return allElements.filter(el => {
-    if (el.group === 'nodes') {
-      if (!nodeVis[el.data.node_type]) return false;
-      if (el.data.node_type === 'proxy_variable' && el.data.verdict && !verdictVis[el.data.verdict]) return false;
-      return true;
-    }
-    if (el.group === 'edges') {
-      return edgeVis[el.data.edge_type] !== false;
-    }
-    return true;
-  });
+  return allElements;
 }
 
 function applyFilters() {
-  const filtered = getFilteredElements();
-  cy.elements().remove();
-  cy.add(filtered);
-  // Prune orphan edges
-  cy.edges().forEach(e => {
-    if (!cy.getElementById(e.data('source')).length || !cy.getElementById(e.data('target')).length) {
-      e.remove();
-    }
+  cy.batch(() => {
+    // 1. Filter nodes
+    cy.nodes().forEach(node => {
+      const data = node.data();
+      let visible = true;
+
+      // Model filter
+      if (selectedModel && data.node_type === 'proxy_variable') {
+        const mList = data.models || [];
+        if (!mList.includes(selectedModel)) visible = false;
+      }
+
+      // Layer / Node Type toggle
+      if (!nodeVis[data.node_type]) visible = false;
+
+      // Verdict toggle for proxies
+      if (data.node_type === 'proxy_variable' && data.verdict && !verdictVis[data.verdict]) {
+        visible = false;
+      }
+
+      if (visible) {
+        node.removeClass('hidden');
+      } else {
+        node.addClass('hidden');
+      }
+    });
+
+    // 2. Filter edges
+    cy.edges().forEach(edge => {
+      const data = edge.data();
+      let visible = true;
+
+      // Edge type toggle
+      if (edgeVis[data.edge_type] === false) visible = false;
+
+      // Model filter for proxy_for
+      if (selectedModel && data.edge_type === 'proxy_for') {
+        const mList = data.models || [];
+        if (!mList.includes(selectedModel)) visible = false;
+      }
+
+      // If either endpoint is hidden, hide edge
+      if (edge.source().hasClass('hidden') || edge.target().hasClass('hidden')) {
+        visible = false;
+      }
+
+      if (visible) {
+        edge.removeClass('hidden');
+      } else {
+        edge.addClass('hidden');
+      }
+    });
   });
-  runLayout();
+
   applySearch();
   updateStats();
 }
@@ -621,33 +725,17 @@ function applySearch() {
   cy.elements().removeClass('highlighted dimmed highlighted-edge');
   if (!searchTLA) return;
   const center = cy.getElementById('indicator:' + searchTLA);
-  if (!center.length) return;
+  if (!center.length || center.hasClass('hidden')) return;
 
   const connected = center.neighborhood().add(center);
   const parent = center.incomers('edge[edge_type="contains"]').sources();
   const grandparent = parent.incomers('edge[edge_type="contains"]').sources();
-  const highlight = connected.add(parent).add(grandparent);
+  const highlight = connected.add(parent).add(grandparent).filter(':visible');
 
-  cy.elements().addClass('dimmed');
+  cy.elements(':visible').addClass('dimmed');
   highlight.removeClass('dimmed');
   center.addClass('highlighted');
-  highlight.edges().addClass('highlighted-edge');
-}
-
-// ── Layout (concentric only) ───────────────────────────────────
-function runLayout() {
-  cy.layout({
-    name: 'cose',
-    idealEdgeLength: 100,
-    nodeOverlap: 20,
-    nodeRepulsion: 12000,
-    edgeElasticity: 80,
-    gravity: 0.3,
-    numIter: 800,
-    animate: true,
-    animationDuration: 800,
-    animationEasing: 'ease-out',
-  }).run();
+  highlight.edges(':visible').addClass('highlighted-edge');
 }
 
 // ── Popover ────────────────────────────────────────────────────
@@ -671,9 +759,15 @@ function showPopover(data, type, renderedPos) {
       html += field('Data Source', data.source_org);
       if (data.domain_knowledge) html += field('Domain Knowledge', data.domain_knowledge);
     } else if (nt === 'proxy_variable') {
-      html += field('Hypothesis', `<span class="stat-chip">${data.hypothesis_id}</span>`);
+      html += field('Hypothesis', `<span class="stat-chip">${data.hypothesis_id || data.id}</span>`);
       if (data.target_tla) html += field('Target Indicator', `<span class="stat-chip">${data.target_tla}</span>`);
       if (data.verdict) html += field('Verdict', `<span class="verdict-badge verdict-${data.verdict}">${(data.verdict || '').replace(/_/g, ' ')}</span>`);
+      if (data.models && data.models.length > 0) {
+        html += field('Proposing Models', data.models.map(m => `<span class="stat-chip">${m}</span>`).join(' '));
+        if (data.consensus_status) {
+          html += field('Consensus Status', `<span class="stat-chip" style="font-weight:600;">${data.consensus_status.replace(/_/g, ' ')}</span>`);
+        }
+      }
       html += field('Confidence', data.confidence ? data.confidence.replace(/_/g, ' ') : '');
       html += field('Evidence Type', data.evidence_type ? data.evidence_type.replace(/_/g, ' ') : '');
       if (data.proxy_description) html += field('Description', data.proxy_description);
@@ -700,6 +794,12 @@ function showPopover(data, type, renderedPos) {
 
     if (et === 'proxy_for') {
       if (data.verdict) html += field('Verdict', `<span class="verdict-badge verdict-${data.verdict}">${(data.verdict || '').replace(/_/g, ' ')}</span>`);
+      if (data.models && data.models.length > 0) {
+        html += field('Evaluating Models', data.models.map(m => `<span class="stat-chip">${m}</span>`).join(' '));
+      }
+      if (data.has_directional_conflict) {
+        html += field('Direction Conflict', `<span class="stat-chip" style="color:var(--accent-red);font-weight:bold;">Models disagree on direction</span>`);
+      }
       html += field('Direction', data.direction);
       html += field('Functional Form', data.functional_form);
       html += field('Expected Strength', data.strength_estimate);
@@ -708,6 +808,29 @@ function showPopover(data, type, renderedPos) {
       if (data.partial_r !== undefined && data.partial_r !== '') html += field('Partial r (GDP controlled)', `<span class="stat-chip">${data.partial_r}</span>`);
       if (data.n_observations) html += field('N observations', `<span class="stat-chip">${data.n_observations}</span>`);
       if (data.mechanism) html += field('Mechanism', data.mechanism);
+
+      if (data.model_evaluations && Object.keys(data.model_evaluations).length > 1) {
+        let table = `<div style="overflow-x:auto;margin-top:6px;"><table style="width:100%;font-size:11px;border-collapse:collapse;text-align:left;">
+          <tr style="border-bottom:1px solid var(--border);color:var(--text-muted);">
+            <th style="padding:2px 4px;">Model</th>
+            <th style="padding:2px 4px;">Verdict</th>
+            <th style="padding:2px 4px;">r</th>
+            <th style="padding:2px 4px;">dir</th>
+          </tr>`;
+        for (const [mName, ev] of Object.entries(data.model_evaluations)) {
+          const v = ev.verdict || '-';
+          const r = ev.pearson_r !== null && ev.pearson_r !== undefined ? Number(ev.pearson_r).toFixed(2) : '-';
+          const dir = ev.direction || '-';
+          table += `<tr style="border-bottom:1px solid var(--border-light);">
+            <td style="padding:2px 4px;font-family:var(--font-mono);">${mName}</td>
+            <td style="padding:2px 4px;"><span class="verdict-badge verdict-${v}" style="padding:1px 4px;font-size:9px;">${v}</span></td>
+            <td style="padding:2px 4px;font-family:var(--font-mono);">${r}</td>
+            <td style="padding:2px 4px;">${dir}</td>
+          </tr>`;
+        }
+        table += `</table></div>`;
+        html += field('Model Breakdown', table);
+      }
     } else if (et === 'inferred_candidate') {
       html += field('Rule', data.rule_name);
       if (data.confidence) html += field('Confidence', `<span class="stat-chip">${data.confidence}</span>`);
@@ -747,10 +870,10 @@ function field(label, value) {
 // ── Stats bar ──────────────────────────────────────────────────
 function updateStats() {
   const s = document.getElementById('stats');
-  const nn = cy.nodes().length;
-  const ne = cy.edges().length;
-  const tn = allElements.filter(e => e.group === 'nodes').length;
-  const te = allElements.filter(e => e.group === 'edges').length;
+  const nn = cy.nodes(':visible').length;
+  const ne = cy.edges(':visible').length;
+  const tn = cy.nodes().length;
+  const te = cy.edges().length;
   s.innerHTML = `<strong>Showing</strong> ${nn} nodes, ${ne} edges<br><strong>Total</strong> ${tn} nodes, ${te} edges`;
 }
 
@@ -760,18 +883,34 @@ document.getElementById('search').addEventListener('input', e => {
   applySearch();
 });
 
+const btnFit = document.getElementById('btn-fit');
+if (btnFit) {
+  btnFit.addEventListener('click', () => {
+    cy.animate({ fit: { eles: cy.elements(':visible'), padding: 40 }, duration: 300 });
+  });
+}
+
+const btnRelayout = document.getElementById('btn-relayout');
+if (btnRelayout) {
+  btnRelayout.addEventListener('click', () => {
+    runLayout();
+  });
+}
+
 // Close popover
 document.getElementById('popover-close').addEventListener('click', hidePopover);
 
 // Click on node
 cy.on('click', 'node', function(e) {
   const node = e.target;
+  if (node.hasClass('hidden')) return;
   showPopover(node.data(), 'node', node.renderedPosition());
 });
 
 // Click on edge
 cy.on('click', 'edge', function(e) {
   const edge = e.target;
+  if (edge.hasClass('hidden')) return;
   const mid = edge.renderedMidpoint();
   showPopover(edge.data(), 'edge', mid);
 });
@@ -782,11 +921,16 @@ cy.on('click', function(e) {
 });
 
 // Cursor feedback on hover
-cy.on('mouseover', 'node, edge', function() { document.getElementById('cy').style.cursor = 'pointer'; });
+cy.on('mouseover', 'node, edge', function(e) {
+  if (!e.target.hasClass('hidden')) {
+    document.getElementById('cy').style.cursor = 'pointer';
+  }
+});
 cy.on('mouseout', 'node, edge', function() { document.getElementById('cy').style.cursor = 'default'; });
 
 // ── Init ───────────────────────────────────────────────────────
 setupControls();
+runLayout();
 applyFilters();
 </script>
 </body>

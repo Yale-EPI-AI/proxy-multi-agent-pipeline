@@ -1,6 +1,6 @@
 """EPI Proxy Discovery Knowledge Graph — public API."""
 
-from .builder import GraphBuilder
+from .builder import GraphBuilder, MultiModelGraphBuilder
 from .export import to_cytoscape_elements, to_graphml, to_json, to_summary_report
 from .visualize import generate_html
 from .graph import EpiKnowledgeGraph
@@ -14,6 +14,9 @@ from .queries import (
     get_indicator_coverage_summary,
     get_proxies_for_indicator,
     get_shared_data_sources,
+    get_consensus_proxies,
+    get_inter_model_conflicts,
+    get_model_unique_discoveries,
 )
 from .reasoning import run_reasoning
 from .schema import (
@@ -32,6 +35,7 @@ from .schema import (
 __all__ = [
     "EpiKnowledgeGraph",
     "GraphBuilder",
+    "MultiModelGraphBuilder",
     "run_reasoning",
     # Schema
     "NodeType",
