@@ -42,6 +42,7 @@ def _build_viz_elements(graph: EpiKnowledgeGraph) -> list[dict]:
             data["units"] = attrs.get("units", "")
             data["raw_polarity"] = attrs.get("raw_polarity", "")
             data["source_org"] = attrs.get("source_org", "")
+            data["proxy_count"] = len(list(graph.predecessors(nid, edge_type=EdgeType.PROXY_FOR)))
             dk = attrs.get("domain_knowledge", "")
             if dk:
                 data["domain_knowledge"] = dk[:500] + ("..." if len(dk) > 500 else "")
@@ -71,6 +72,7 @@ def _build_viz_elements(graph: EpiKnowledgeGraph) -> list[dict]:
             data["url"] = attrs.get("url", "")
             data["accessibility"] = attrs.get("accessibility", "")
             data["coverage"] = attrs.get("coverage", "")
+            data["usage_count"] = len(list(graph.predecessors(nid, edge_type=EdgeType.MEASURED_BY)))
 
         elif node_type == NodeType.ISSUE_CATEGORY.value:
             data["description"] = attrs.get("description", "")
@@ -266,19 +268,46 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
   /* ── Popover detail panel ───────────────────────────────── */
   #popover {
     display: none; position: absolute; z-index: 1000;
+    top: 20px; right: 24px;
     background: var(--bg-primary); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px 18px; width: 340px; max-height: 420px;
-    overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
-    pointer-events: auto;
+    border-radius: 8px; width: 350px; max-height: 480px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+    pointer-events: auto; flex-direction: column; overflow: hidden;
+    transition: box-shadow 0.2s;
   }
-  #popover.visible { display: block; }
+  #popover.visible { display: flex; }
+  #popover.is-dragging { box-shadow: 0 14px 40px rgba(0,0,0,0.22); opacity: 0.95; }
+  #popover.minimized { max-height: none; width: 280px; }
+  #popover.minimized #popover-body { display: none; }
+
+  #popover-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 14px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-light);
+    cursor: grab; user-select: none; flex-shrink: 0;
+  }
+  #popover-header:active { cursor: grabbing; }
 
   #popover-title {
-    font-family: var(--font-display); font-size: 15px; color: var(--yale-blue);
-    font-weight: 700; margin-bottom: 12px; padding-bottom: 8px;
-    border-bottom: 2px solid var(--yale-blue); line-height: 1.3;
+    font-family: var(--font-display); font-size: 14px; color: var(--yale-blue);
+    font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; flex: 1;
   }
+
+  .popover-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .popover-btn {
+    background: none; border: none; font-size: 16px; color: var(--text-muted);
+    cursor: pointer; line-height: 1; width: 24px; height: 24px; display: flex;
+    align-items: center; justify-content: center; border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .popover-btn:hover { background: var(--border-light); color: var(--text-primary); }
+
+  #popover-body {
+    padding: 14px 16px; overflow-y: auto; max-height: 420px;
+  }
+
   #popover .field { margin-bottom: 10px; }
+  #popover .field:last-child { margin-bottom: 0; }
   #popover .field-label {
     font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
     text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px;
@@ -304,13 +333,6 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     background: var(--bg-secondary); color: var(--text-primary);
     border: 1px solid var(--border-light);
   }
-
-  #popover-close {
-    position: absolute; top: 10px; right: 12px; background: none; border: none;
-    font-size: 18px; color: var(--text-muted); cursor: pointer; line-height: 1;
-    padding: 2px 6px; border-radius: 4px;
-  }
-  #popover-close:hover { background: var(--bg-secondary); color: var(--text-primary); }
 </style>
 </head>
 <body>
@@ -325,9 +347,19 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="section-label">Search Indicator</div>
     <input type="text" id="search" class="search-box" placeholder="Type TLA (e.g. UWD, WRR)..." list="tla-list">
     <datalist id="tla-list"></datalist>
-    <div style="display:flex;gap:6px;margin-top:6px;">
+  </div>
+
+  <div>
+    <div class="section-label">Layout Mode</div>
+    <select id="layout-select" class="search-box" style="cursor:pointer;margin-bottom:6px;">
+      <option value="concentric">Concentric Rings (Taxonomy)</option>
+      <option value="tree">Hierarchical Tree (Top-Down)</option>
+      <option value="radial">Radial Sunburst Tree</option>
+      <option value="cose">Force-Directed Physics</option>
+    </select>
+    <div style="display:flex;gap:6px;">
       <button id="btn-fit" class="search-box" style="flex:1;padding:6px;cursor:pointer;background:var(--bg-primary);text-align:center;font-size:11px;font-family:var(--font-mono);">Fit View</button>
-      <button id="btn-relayout" class="search-box" style="flex:1;padding:6px;cursor:pointer;background:var(--bg-primary);text-align:center;font-size:11px;font-family:var(--font-mono);">Relayout</button>
+      <button id="btn-reset" class="search-box" style="flex:1;padding:6px;cursor:pointer;background:var(--bg-primary);text-align:center;font-size:11px;font-family:var(--font-mono);">Reset View</button>
     </div>
   </div>
 
@@ -373,8 +405,13 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
 <div id="cy-container">
   <div id="cy"></div>
   <div id="popover">
-    <button id="popover-close">&times;</button>
-    <div id="popover-title"></div>
+    <div id="popover-header">
+      <div id="popover-title">Details</div>
+      <div class="popover-actions">
+        <button id="popover-min" class="popover-btn" title="Minimize / Expand">&minus;</button>
+        <button id="popover-close" class="popover-btn" title="Close">&times;</button>
+      </div>
+    </div>
     <div id="popover-body"></div>
   </div>
 </div>
@@ -578,20 +615,36 @@ const cy = cytoscape({
       'background-color': '#2b5f9e', 'width': 28, 'height': 28,
       'font-size': 10, 'color': '#2b5f9e', 'font-weight': '600',
     }},
-    // Indicators — ring 2
+    // Indicators — sized dynamically by proxy abundance (proxy_count)
     { selector: 'node[node_type="indicator"]', style: {
-      'background-color': '#4a90d9', 'width': 20, 'height': 20,
-      'font-size': 9, 'color': '#5a5a5a',
+      'background-color': '#4a90d9',
+      'width': 'mapData(proxy_count, 0, 36, 18, 38)',
+      'height': 'mapData(proxy_count, 0, 36, 18, 38)',
+      'font-size': 9, 'color': '#333333', 'font-weight': '600',
       'font-family': '"JetBrains Mono", monospace',
     }},
-    // Proxies — ring 3
+    // Proxies — sized dynamically by model consensus agreement (model_count)
     { selector: 'node[node_type="proxy_variable"]', style: {
-      'background-color': '#2e7d32', 'width': 12, 'height': 12,
+      'background-color': '#2e7d32',
+      'width': 'mapData(model_count, 1, 10, 11, 24)',
+      'height': 'mapData(model_count, 1, 10, 11, 24)',
       'font-size': 7, 'color': '#8a8a8a',
     }},
-    // Data sources — ring 4
+    // Border highlights for model consensus
+    { selector: 'node[consensus_status="unanimous_confirmed"]', style: {
+      'border-width': 2.5, 'border-color': '#1b5e20',
+    }},
+    { selector: 'node[consensus_status="majority_confirmed"]', style: {
+      'border-width': 2, 'border-color': '#2e7d32',
+    }},
+    { selector: 'node[consensus_status="contested"]', style: {
+      'border-width': 2, 'border-color': '#bf6900', 'border-style': 'dashed',
+    }},
+    // Data sources — sized dynamically by number of proxies measured
     { selector: 'node[node_type="data_source"]', style: {
-      'background-color': '#8a8a8a', 'width': 10, 'height': 10,
+      'background-color': '#8a8a8a',
+      'width': 'mapData(usage_count, 1, 40, 10, 26)',
+      'height': 'mapData(usage_count, 1, 40, 10, 26)',
       'font-size': 7, 'shape': 'diamond', 'color': '#8a8a8a',
     }},
     // Verdict overrides for proxy nodes
@@ -638,23 +691,69 @@ const cy = cytoscape({
   wheelSensitivity: 0.3,
 });
 
-// ── Layout (concentric hierarchical — instant & deterministic) ──
-function runLayout() {
-  cy.layout({
-    name: 'concentric',
-    concentric: function(node) {
-      const ring = node.data('ring');
-      return (ring !== undefined) ? (5 - ring) : 1;
-    },
-    levelWidth: function() { return 1; },
-    equidistant: true,
-    minNodeSpacing: 18,
-    spacingFactor: 1.0,
-    avoidOverlap: true,
-    padding: 40,
-    animate: false,
-    fit: true,
-  }).run();
+// ── Layout Engine (multi-mode) ─────────────────────────────────
+let currentLayoutName = 'concentric';
+
+function runLayout(layoutName) {
+  if (layoutName) currentLayoutName = layoutName;
+  const name = currentLayoutName;
+
+  if (name === 'tree') {
+    const roots = cy.nodes('[node_type="policy_objective"]:visible');
+    cy.layout({
+      name: 'breadthfirst',
+      roots: roots.length ? roots : undefined,
+      directed: true,
+      spacingFactor: 1.3,
+      padding: 40,
+      animate: true,
+      animationDuration: 350,
+      fit: true,
+    }).run();
+  } else if (name === 'radial') {
+    const roots = cy.nodes('[node_type="policy_objective"]:visible');
+    cy.layout({
+      name: 'breadthfirst',
+      roots: roots.length ? roots : undefined,
+      directed: true,
+      circle: true,
+      spacingFactor: 1.15,
+      padding: 40,
+      animate: true,
+      animationDuration: 350,
+      fit: true,
+    }).run();
+  } else if (name === 'cose') {
+    cy.layout({
+      name: 'cose',
+      randomize: false,
+      idealEdgeLength: 70,
+      nodeOverlap: 20,
+      nodeRepulsion: 7000,
+      gravity: 0.25,
+      numIter: 300,
+      animate: true,
+      animationDuration: 400,
+      fit: true,
+    }).run();
+  } else {
+    // Default: concentric rings (equidistant)
+    cy.layout({
+      name: 'concentric',
+      concentric: function(node) {
+        const ring = node.data('ring');
+        return (ring !== undefined) ? (5 - ring) : 1;
+      },
+      levelWidth: function() { return 1; },
+      equidistant: true,
+      minNodeSpacing: 18,
+      spacingFactor: 1.0,
+      avoidOverlap: true,
+      padding: 40,
+      animate: false,
+      fit: true,
+    }).run();
+  }
 }
 
 // ── Instant CSS-class based filtering ──────────────────────────
@@ -721,29 +820,86 @@ function applyFilters() {
   updateStats();
 }
 
-function applySearch() {
+function spotlightNode(centerNode) {
   cy.elements().removeClass('highlighted dimmed highlighted-edge');
-  if (!searchTLA) return;
+  if (!centerNode || !centerNode.length || centerNode.hasClass('hidden')) return;
+
+  // 1. Direct neighborhood
+  const neighborhood = centerNode.neighborhood().add(centerNode);
+
+  // 2. Upstream hierarchy chain (Indicator -> Category -> Policy Objective)
+  let lineage = cy.collection();
+  let current = centerNode;
+  for (let i = 0; i < 4; i++) {
+    const parentEdges = current.incomers('edge[edge_type="contains"]');
+    if (!parentEdges.length) break;
+    lineage = lineage.add(parentEdges).add(parentEdges.sources());
+    current = parentEdges.sources();
+  }
+
+  // 3. Downstream proxies & sources if clicking an indicator or category
+  const downstreamEdges = centerNode.incomers('edge[edge_type="proxy_for"]');
+  const downstreamProxies = downstreamEdges.sources();
+  const sourceEdges = downstreamProxies.outgoers('edge[edge_type="measured_by"]');
+  const sources = sourceEdges.targets();
+
+  const highlightGroup = neighborhood
+    .add(lineage)
+    .add(downstreamEdges)
+    .add(downstreamProxies)
+    .add(sourceEdges)
+    .add(sources)
+    .filter(':visible');
+
+  // Dim unrelated elements
+  cy.elements(':visible').not(highlightGroup).addClass('dimmed');
+  highlightGroup.removeClass('dimmed');
+
+  // Highlight active center node and connections
+  centerNode.addClass('highlighted');
+  highlightGroup.edges(':visible').addClass('highlighted-edge');
+}
+
+function clearSpotlight() {
+  cy.elements().removeClass('highlighted dimmed highlighted-edge');
+}
+
+function applySearch() {
+  if (!searchTLA) {
+    clearSpotlight();
+    return;
+  }
   const center = cy.getElementById('indicator:' + searchTLA);
-  if (!center.length || center.hasClass('hidden')) return;
-
-  const connected = center.neighborhood().add(center);
-  const parent = center.incomers('edge[edge_type="contains"]').sources();
-  const grandparent = parent.incomers('edge[edge_type="contains"]').sources();
-  const highlight = connected.add(parent).add(grandparent).filter(':visible');
-
-  cy.elements(':visible').addClass('dimmed');
-  highlight.removeClass('dimmed');
-  center.addClass('highlighted');
-  highlight.edges(':visible').addClass('highlighted-edge');
+  if (!center.length || center.hasClass('hidden')) {
+    clearSpotlight();
+    return;
+  }
+  spotlightNode(center);
 }
 
 // ── Popover ────────────────────────────────────────────────────
 const popover = document.getElementById('popover');
+const popoverHeader = document.getElementById('popover-header');
 const popoverTitle = document.getElementById('popover-title');
 const popoverBody = document.getElementById('popover-body');
+const popoverMin = document.getElementById('popover-min');
+const popoverClose = document.getElementById('popover-close');
 
-function showPopover(data, type, renderedPos) {
+let hasUserRepositioned = false;
+let isDraggingPopover = false;
+let dragStartX = 0, dragStartY = 0;
+let initialPopoverLeft = 0, initialPopoverTop = 0;
+let isPopoverMinimized = false;
+
+function resetPopoverPosition() {
+  hasUserRepositioned = false;
+  popover.style.top = '20px';
+  popover.style.right = '24px';
+  popover.style.left = 'auto';
+  popover.style.bottom = 'auto';
+}
+
+function showPopover(data, type) {
   let html = '';
 
   if (type === 'node') {
@@ -840,26 +996,93 @@ function showPopover(data, type, renderedPos) {
 
   popoverBody.innerHTML = html || 'No details';
 
-  // Position near the node/edge within the cy-container
-  const container = document.getElementById('cy-container');
-  const rect = container.getBoundingClientRect();
-  let left = renderedPos.x + 20;
-  let top = renderedPos.y - 20;
-
-  // Keep popover within container bounds
-  const pw = 340, ph = 420;
-  if (left + pw > rect.width) left = renderedPos.x - pw - 20;
-  if (top + ph > rect.height) top = rect.height - ph - 10;
-  if (top < 10) top = 10;
-  if (left < 10) left = 10;
-
-  popover.style.left = left + 'px';
-  popover.style.top = top + 'px';
+  if (!hasUserRepositioned) {
+    popover.style.top = '20px';
+    popover.style.right = '24px';
+    popover.style.left = 'auto';
+    popover.style.bottom = 'auto';
+  }
   popover.classList.add('visible');
 }
 
 function hidePopover() {
   popover.classList.remove('visible');
+}
+
+// ── Draggable Popover Logic ────────────────────────────────────
+if (popoverHeader) {
+  popoverHeader.addEventListener('mousedown', e => {
+    if (e.target.closest('.popover-btn')) return;
+    isDraggingPopover = true;
+    popover.classList.add('is-dragging');
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    const pRect = popover.getBoundingClientRect();
+    const cRect = document.getElementById('cy-container').getBoundingClientRect();
+    initialPopoverLeft = pRect.left - cRect.left;
+    initialPopoverTop = pRect.top - cRect.top;
+
+    popover.style.left = initialPopoverLeft + 'px';
+    popover.style.top = initialPopoverTop + 'px';
+    popover.style.right = 'auto';
+    popover.style.bottom = 'auto';
+
+    document.addEventListener('mousemove', onPopoverMouseMove);
+    document.addEventListener('mouseup', onPopoverMouseUp);
+    e.preventDefault();
+  });
+}
+
+function onPopoverMouseMove(e) {
+  if (!isDraggingPopover) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+
+  const container = document.getElementById('cy-container');
+  const cRect = container.getBoundingClientRect();
+  const pRect = popover.getBoundingClientRect();
+
+  let newLeft = initialPopoverLeft + dx;
+  let newTop = initialPopoverTop + dy;
+
+  const minLeft = 10;
+  const maxLeft = Math.max(10, cRect.width - pRect.width - 10);
+  const minTop = 10;
+  const maxTop = Math.max(10, cRect.height - pRect.height - 10);
+
+  newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+  newTop = Math.max(minTop, Math.min(newTop, maxTop));
+
+  popover.style.left = newLeft + 'px';
+  popover.style.top = newTop + 'px';
+  popover.style.right = 'auto';
+  popover.style.bottom = 'auto';
+  hasUserRepositioned = true;
+}
+
+function onPopoverMouseUp() {
+  if (!isDraggingPopover) return;
+  isDraggingPopover = false;
+  popover.classList.remove('is-dragging');
+  document.removeEventListener('mousemove', onPopoverMouseMove);
+  document.removeEventListener('mouseup', onPopoverMouseUp);
+}
+
+if (popoverMin) {
+  popoverMin.addEventListener('click', e => {
+    e.stopPropagation();
+    isPopoverMinimized = !isPopoverMinimized;
+    if (isPopoverMinimized) {
+      popover.classList.add('minimized');
+      popoverMin.innerHTML = '&#43;';
+      popoverMin.title = 'Expand';
+    } else {
+      popover.classList.remove('minimized');
+      popoverMin.innerHTML = '&minus;';
+      popoverMin.title = 'Minimize';
+    }
+  });
 }
 
 function field(label, value) {
@@ -883,6 +1106,13 @@ document.getElementById('search').addEventListener('input', e => {
   applySearch();
 });
 
+const layoutSelect = document.getElementById('layout-select');
+if (layoutSelect) {
+  layoutSelect.addEventListener('change', e => {
+    runLayout(e.target.value);
+  });
+}
+
 const btnFit = document.getElementById('btn-fit');
 if (btnFit) {
   btnFit.addEventListener('click', () => {
@@ -890,34 +1120,101 @@ if (btnFit) {
   });
 }
 
-const btnRelayout = document.getElementById('btn-relayout');
-if (btnRelayout) {
-  btnRelayout.addEventListener('click', () => {
-    runLayout();
+const btnReset = document.getElementById('btn-reset');
+if (btnReset) {
+  btnReset.addEventListener('click', () => {
+    clearSpotlight();
+    hidePopover();
+    resetPopoverPosition();
+    if (isPopoverMinimized) {
+      isPopoverMinimized = false;
+      popover.classList.remove('minimized');
+      popoverMin.innerHTML = '&minus;';
+      popoverMin.title = 'Minimize';
+    }
+    searchTLA = '';
+    const searchInput = document.getElementById('search');
+    if (searchInput) searchInput.value = '';
+
+    nodeVis = {...defaultNodeVis};
+    edgeVis = {...defaultEdgeVis};
+    verdictVis = {...defaultVerdictVis};
+    selectedModel = '';
+
+    const mSel = document.getElementById('model-select');
+    if (mSel) mSel.value = '';
+    const lSel = document.getElementById('layout-select');
+    if (lSel) lSel.value = 'concentric';
+
+    document.querySelectorAll('#layer-toggles input').forEach(cb => {
+      cb.checked = !!nodeVis[cb.dataset.nodeType];
+    });
+    document.querySelectorAll('#edge-toggles input').forEach(cb => {
+      cb.checked = !!edgeVis[cb.dataset.edgeType];
+    });
+    document.querySelectorAll('#verdict-toggles input').forEach(cb => {
+      cb.checked = !!verdictVis[cb.dataset.verdict];
+    });
+
+    applyFilters();
+    runLayout('concentric');
   });
 }
 
 // Close popover
-document.getElementById('popover-close').addEventListener('click', hidePopover);
+if (popoverClose) {
+  popoverClose.addEventListener('click', e => {
+    e.stopPropagation();
+    hidePopover();
+    clearSpotlight();
+  });
+}
 
-// Click on node
+// Single and double-click handling on nodes
+let lastClickTime = 0;
+let lastClickTarget = null;
+
 cy.on('click', 'node', function(e) {
   const node = e.target;
   if (node.hasClass('hidden')) return;
-  showPopover(node.data(), 'node', node.renderedPosition());
+
+  const now = Date.now();
+  if (lastClickTarget === node.id() && (now - lastClickTime) < 350) {
+    // Double click detected! Zoom and frame the connected subtree
+    const subtree = node.closedNeighborhood().filter(':visible');
+    cy.animate({ fit: { eles: subtree, padding: 60 }, duration: 400, easing: 'ease-out' });
+    lastClickTime = 0;
+    lastClickTarget = null;
+    return;
+  }
+  lastClickTime = now;
+  lastClickTarget = node.id();
+
+  spotlightNode(node);
+  showPopover(node.data(), 'node');
 });
 
-// Click on edge
+// Click on edge: spotlight connected pair and open popover
 cy.on('click', 'edge', function(e) {
   const edge = e.target;
   if (edge.hasClass('hidden')) return;
-  const mid = edge.renderedMidpoint();
-  showPopover(edge.data(), 'edge', mid);
+
+  cy.elements().removeClass('highlighted dimmed highlighted-edge');
+  const group = edge.connectedNodes().add(edge);
+  cy.elements(':visible').not(group).addClass('dimmed');
+  group.removeClass('dimmed');
+  edge.addClass('highlighted-edge');
+  edge.connectedNodes().addClass('highlighted');
+
+  showPopover(edge.data(), 'edge');
 });
 
-// Click on background — close popover
+// Click on background — clear spotlight and close popover
 cy.on('click', function(e) {
-  if (e.target === cy) hidePopover();
+  if (e.target === cy) {
+    clearSpotlight();
+    hidePopover();
+  }
 });
 
 // Cursor feedback on hover
